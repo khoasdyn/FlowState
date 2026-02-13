@@ -14,7 +14,7 @@ struct HomeView: View {
     var body: some View {
         VStack(spacing: 32) {
             durationPicker
-            header
+            focusImage
             mainGroupButtons
         }
         .padding(.horizontal, 16)

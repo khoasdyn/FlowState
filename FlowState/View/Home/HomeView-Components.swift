@@ -37,9 +37,11 @@ extension HomeView {
         .opacity(viewModel.appState != .idle ? 0.4 : 1)
     }
     
-    var header: some View {
-        Text("🧘‍♂️")
-            .font(.system(size: 96, weight: .semibold))
+    var focusImage: some View {
+        Image(.campfire)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 300, height: 300)
     }
     
     var mainGroupButtons: some View {

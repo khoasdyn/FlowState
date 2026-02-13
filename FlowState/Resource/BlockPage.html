@@ -2,42 +2,103 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Website Blocked</title>
-                <style>
-                    body {
-                        font-family: sans-serif;
-                        text-align: center;
-                        background-color: #ffffff;
-                        color: #0A0D12;
-                        margin: 0;
-                        padding: 0;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100vh;
-                    }
-                    
-                    img {
-                        margin: 0 0 32px;
-                    }
-                    
-                    h1 {
-                        font-size: 3em;
-                        margin: 0 0 12px;
-                    }
-                    p {
-                        font-size: 1.3em;
-                        margin: 0;
-                    }
-                </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Blocked</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+            body {
+                font-family: 'Poppins', sans-serif;
+                text-align: center;
+                background-color: #FAFAF9;
+                color: #1C1917;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            .container {
+                max-width: 400px;
+                padding: 0 24px;
+            }
+
+            .image {
+                width: 180px;
+                margin-bottom: 28px;
+                filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.08));
+            }
+
+            .heading {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1C1917;
+                margin: 0 0 36px;
+            }
+
+            .divider {
+                width: 32px;
+                height: 3px;
+                border-radius: 2px;
+                background-color: #E7E5E4;
+                margin: 0 auto 32px;
+            }
+
+            .quote {
+                font-size: 17px;
+                font-weight: 500;
+                line-height: 1.65;
+                color: #57534E;
+                margin: 0 0 8px;
+                font-style: italic;
+            }
+
+            .author {
+                font-size: 14px;
+                font-weight: 500;
+                color: #A8A29E;
+            }
+        </style>
     </head>
     <body>
-        <div class="block-container">
-            <img src="flower.svg" alt="Blocked" width="200">
-            <h1>Access Denied</h1>
-            <p>This website is blocked for your productivity!</p>
+        <div class="container">
+            <img class="image" src="direction-board.png" alt="Blocked">
+            <p class="heading" id="heading"></p>
+            <div class="divider"></div>
+            <p class="quote" id="quote"></p>
+            <p class="author" id="author"></p>
         </div>
+
+        <script>
+            const headings = [
+                "Nope, not today.",
+                "Wrong turn!",
+                "Nice try though.",
+                "Whoa, hold up.",
+                "Not so fast!",
+            ];
+
+            const quotes = [
+                { text: "The sun's rays do not burn until brought to a focus.", author: "Alexander Graham Bell" },
+                { text: "Starve your distractions, feed your focus.", author: "Daniel Goleman" },
+                { text: "You will never reach your destination if you stop and throw stones at every dog that barks.", author: "Winston Churchill" },
+                { text: "The art of being wise is the art of knowing what to overlook.", author: "William James" },
+                { text: "Where focus goes, energy flows.", author: "Tony Robbins" },
+                { text: "The shorter way to do many things is to do only one thing at a time.", author: "Mozart" },
+                { text: "Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.", author: "Buddha" },
+                { text: "What you stay focused on will grow.", author: "Roy T. Bennett" },
+            ];
+
+            const h = headings[Math.floor(Math.random() * headings.length)];
+            const q = quotes[Math.floor(Math.random() * quotes.length)];
+
+            document.getElementById("heading").textContent = h;
+            document.getElementById("quote").textContent = `"${q.text}"`;
+            document.getElementById("author").textContent = q.author;
+        </script>
     </body>
 </html>
