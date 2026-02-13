@@ -14,7 +14,6 @@ enum TimerState {
     case paused
 }
 
-
 @Observable
 class TimerViewModel {
     

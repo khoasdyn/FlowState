@@ -78,6 +78,10 @@ class ViewModel {
         guard appState == .running else { return }
         monitoring()
         timerViewModel.tick()
+        
+        if timerViewModel.remainingTime <= 0 {
+            resetSession()
+        }
     }
     
     // MARK: – Website Monitoring
