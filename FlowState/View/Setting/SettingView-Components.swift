@@ -45,6 +45,7 @@ extension SettingView {
             }
             
             modelContext.insert(BlockedWebsite(domain: cleaned))
+            try? modelContext.save()
             inputURL = ""
             isValidURL = true
         }
@@ -81,6 +82,7 @@ extension SettingView {
                         
                         Button(action: {
                             modelContext.delete(website)
+                            try? modelContext.save()
                         }) {
                             Image(systemName: "multiply.circle.fill")
                                 .font(.system(size: 14, weight: .semibold))
@@ -101,6 +103,7 @@ extension SettingView {
                 modelContext.insert(BlockedWebsite(domain: "x.com"))
                 modelContext.insert(BlockedWebsite(domain: "reddit.com"))
                 modelContext.insert(BlockedWebsite(domain: "tiktok.com"))
+                try? modelContext.save()
             } label: {
                 Text("Add suggested websites")
                     .padding(.horizontal, 24)
@@ -163,6 +166,7 @@ extension SettingView {
                         
                         Button(action: {
                             modelContext.delete(app)
+                            try? modelContext.save()
                         }) {
                             Image(systemName: "multiply.circle.fill")
                                 .font(.system(size: 14, weight: .semibold))
@@ -191,6 +195,7 @@ extension SettingView {
             guard !blockedAppList.contains(where: { $0.path == appPath }) else { return }
             
             modelContext.insert(BlockedApp(name: appName, path: appPath))
+            try? modelContext.save()
             
         case .failure(let error):
             print("Error selecting app: \(error)")
