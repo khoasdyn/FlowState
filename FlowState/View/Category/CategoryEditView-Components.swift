@@ -57,7 +57,7 @@ extension CategoryEditView {
                 .padding(.vertical, 8)
                 .padding(.horizontal, 16)
                 .foregroundStyle(.primary)
-                .background(.gray.opacity(0.2))
+                .background(.grayWarm200)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)

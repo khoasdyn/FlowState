@@ -34,7 +34,7 @@ extension HomeView {
             }
             .frame(maxWidth: 300)
             
-            Text("Start the timer to block sites on your list.\nEdit it via the button.")
+            Text("Start the timer to block sites on your list.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppConfig.ColorTheme.secondaryText)
                 .multilineTextAlignment(.center)

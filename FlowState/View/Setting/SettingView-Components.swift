@@ -27,7 +27,7 @@ extension SettingView {
                 )
             
                 Text("The input URL not valid!")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.error500)
                     .opacity(isValidURL ? 0 : 1)
         }
         .onSubmit {

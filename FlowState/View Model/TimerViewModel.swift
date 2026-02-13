@@ -20,7 +20,7 @@ class TimerViewModel {
     
     // MARK: - Properties
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    let timeAmount: Int = 5 // 300 seconds = 5 minutes
+    let timeAmount: Int = 300 // 300 seconds = 5 minutes
     var remainingTime: Int = AppConfig.pomodoroTime
     var totalSessionTime: Int = 0
     

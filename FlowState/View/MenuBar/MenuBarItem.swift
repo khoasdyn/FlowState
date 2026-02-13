@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 struct MenuBarItem: View {
     @Environment(ViewModel.self) var viewModel
