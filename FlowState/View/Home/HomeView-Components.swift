@@ -38,7 +38,7 @@ extension HomeView {
     }
     
     var focusImage: some View {
-        Image(.campfire)
+        Image(viewModel.appState == .running || viewModel.appState == .paused ? .campfire : .marshmallow)
             .resizable()
             .scaledToFit()
             .frame(width: 300, height: 300)
