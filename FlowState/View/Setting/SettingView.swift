@@ -33,7 +33,8 @@ struct SettingView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 24)
+        .padding(.top, 36)
+        .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.white)
     }

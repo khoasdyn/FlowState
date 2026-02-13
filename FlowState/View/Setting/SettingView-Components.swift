@@ -116,7 +116,7 @@ extension SettingView {
                     .foregroundStyle(.white)
                     .background(
                         Capsule()
-                            .fill(.brand500)
+                            .fill(.blue600)
                     )
             }
             .buttonStyle(.plain)

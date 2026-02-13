@@ -21,12 +21,13 @@ struct FlowStateApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 450, maxWidth: 600, minHeight: 550, maxHeight: 640)
+                .frame(minWidth: 500, maxWidth: 600, minHeight: 640, maxHeight: 700)
                 .preferredColorScheme(.light)
                 .modelContainer(for: BlockedItem.self)
                 .environment(viewModel)
         }
         .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
         
         MenuBarScene(showMenuBarExtra: $showMenuBarExtra)
             .environment(viewModel)
