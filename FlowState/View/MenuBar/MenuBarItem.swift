@@ -30,29 +30,32 @@ struct MenuBarItem: View {
             }
             .disabled(viewModel.appState == .idle)
             
-            Divider()
-            
-            Button("-5") {
-                viewModel.subtractTime()
-            }
-            .disabled(viewModel.appState == .idle)
+//            Divider()
+//            
+//            Button("-5") {
+//                viewModel.subtractTime()
+//            }
+//            .disabled(viewModel.appState == .idle)
+//
+//            Button("+5") {
+//                viewModel.addTime()
+//            }
+//            .disabled(viewModel.appState == .idle)
 
-            Button("+5") {
-                viewModel.addTime()
-            }
-            .disabled(viewModel.appState == .idle)
-
-            Divider()
-            
-            Button("Finish Session") {
-                viewModel.resetSession()
-            }
-            .disabled(viewModel.appState == .idle)
+//            Divider()
+//            
+//            Button("Finish Session") {
+//                viewModel.resetSession()
+//            }
+//            .disabled(viewModel.appState == .idle)
             
             Divider()
             
             Button("Settings") {
-                NSApp.activate(ignoringOtherApps: true)
+                if let window = NSApp.windows.first(where: { $0.canBecomeMain }) {
+                    window.makeKeyAndOrderFront(nil)
+                }
+                NSApp.activate()
                 viewModel.appNavigationView = .edit
             }
             
