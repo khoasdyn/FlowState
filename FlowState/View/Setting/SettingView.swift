@@ -20,7 +20,7 @@ struct SettingView: View {
     @State var showingAppPicker: Bool = false
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 40) {
             HStack(spacing: 12) {
                 backButton
                 

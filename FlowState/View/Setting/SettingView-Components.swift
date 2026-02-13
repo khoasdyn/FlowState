@@ -130,6 +130,7 @@ extension SettingView {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .foregroundStyle(.grayWarm950)
+            .contentShape(Rectangle())
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(.grayWarm950, lineWidth: 2)
