@@ -73,8 +73,10 @@ class BlockedWebsitesViewModel {
     }
     
     private func redirectToLocalPage() {
-        // The path to your local HTML file
-        let localPagePath = Bundle.main.path(forResource: "BlockPage", ofType: "html")!
+        guard let localPagePath = Bundle.main.path(forResource: "BlockPage", ofType: "html") else {
+            print("Error: BlockPage.html not found in bundle")
+            return
+        }
         let localPageURL = URL(fileURLWithPath: localPagePath).absoluteString
         
         let appleScriptRedirect = """
