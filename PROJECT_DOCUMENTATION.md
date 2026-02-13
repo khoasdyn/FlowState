@@ -104,7 +104,7 @@ FlowState/
 
 **`BlockedWebsitesViewModel.swift`** — Contains two things: the `BlockedItem` SwiftData model class (a simple URL string with an ID), and the `BlockedWebsitesViewModel` class that executes AppleScript to read Chrome's active tab URL and redirect it if it matches a blocked domain. The `checkChromeURL(list:)` method is the core blocking function. The `redirectToLocalPage()` method constructs and executes the redirect AppleScript.
 
-**`TimerViewModel.swift`** — A self-contained timer that manages only time values with no reference to its parent. Owns `remainingTime` (the displayed countdown/countup value) and `totalSessionTime` (the original session duration, used to detect overtime). Publishes a 1-second timer via `Timer.publish(every: 1, ...)`. Provides `start()` to capture the session duration, `tick()` to advance one second, `reset()` to return to defaults, and `addTime()`/`subtractTime()` for adjustments. It does not know about app state, navigation, or website blocking — ViewModel calls its methods and makes all decisions.
+**`TimerViewModel.swift`** — A self-contained timer that manages only time values with no reference to its parent. Owns `remainingTime` (the displayed countdown value). Publishes a 1-second timer via `Timer.publish(every: 1, ...)`. Provides `tick()` to count down one second (stopping at zero), `reset()` to return to defaults, and `addTime()`/`subtractTime()` for adjustments. It does not know about app state, navigation, or website blocking — ViewModel calls its methods and makes all decisions.
 
 **`AppConfig.swift`** — Central place for app-wide constants. Currently holds the default Pomodoro time (1500 seconds = 25 minutes) and a `ColorTheme` struct with semantic color references used throughout the UI.
 
@@ -117,7 +117,6 @@ User taps Start
     → ViewModel.handleTimer()
     → ViewModel.startSession()
         → appState = .running
-        → TimerViewModel.start() (captures remainingTime as totalSessionTime)
 
 Every 1 second (timer tick via .onReceive in ContentView):
     → ViewModel.countTime()
@@ -129,7 +128,7 @@ Every 1 second (timer tick via .onReceive in ContentView):
                 → If match: redirectToLocalPage()
                     → NSAppleScript: sets Chrome tab URL to BlockPage.html
         → TimerViewModel.tick()
-            → Decrements remainingTime (or increments during overtime)
+            → Decrements remainingTime (stops at zero)
 
     → ContentView also copies @Query blockedList to ViewModel.blockedWebsites
       (this is how SwiftData items get passed to the view model layer)
@@ -155,7 +154,7 @@ The timer has three states defined in the `TimerState` enum:
 - **`.running`** — Session active. Timer counts down each second. Website blocking is active. The user can pause or finish.
 - **`.paused`** — Session paused. Timer holds its current value. Website blocking stops. The user can resume or finish.
 
-When the timer reaches zero, it enters "overtime" mode: it resets and starts counting up, with the UI showing "Session Ended!" to indicate the planned focus time has elapsed.
+When the timer reaches zero, it stops counting. The session remains active until the user manually finishes it.
 
 ### Entitlements
 

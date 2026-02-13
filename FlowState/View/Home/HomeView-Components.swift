@@ -9,14 +9,8 @@ import SwiftUI
 
 extension HomeView {
     var header: some View {
-        VStack(spacing: 0) {
-            Text("🧘‍♂️")
-                .font(.system(size: 64, weight: .semibold))
-            
-            Text("Session Ended!")
-                .opacity(viewModel.checkOverTime ? 1 : 0)
-        }
-        .frame(maxWidth: 300)
+        Text("🧘‍♂️")
+            .font(.system(size: 96, weight: .semibold))
     }
     
     var mainGroupButtons: some View {

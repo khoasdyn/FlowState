@@ -12,13 +12,8 @@ struct MenuBarScene: Scene {
             HStack(spacing: 24) {
                 Image(systemName: "timer")
                 
-                if viewModel.checkOverTime {
-                    Text("Session ended (\(viewModel.formattedTime))")
-                        .monospacedDigit()
-                } else {
-                    Text(viewModel.formattedTime)
-                        .monospacedDigit()
-                }
+                Text(viewModel.formattedTime)
+                    .monospacedDigit()
             }
         }
     }

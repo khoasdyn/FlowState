@@ -35,12 +35,12 @@ struct MenuBarItem: View {
             Button("-5") {
                 viewModel.subtractTime()
             }
-            .disabled(viewModel.appState == .idle || viewModel.checkOverTime)
-            
+            .disabled(viewModel.appState == .idle)
+
             Button("+5") {
                 viewModel.addTime()
             }
-            .disabled(viewModel.appState == .idle || viewModel.checkOverTime)
+            .disabled(viewModel.appState == .idle)
 
             Divider()
             

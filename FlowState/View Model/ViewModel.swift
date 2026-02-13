@@ -27,10 +27,6 @@ class ViewModel {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    var checkOverTime: Bool {
-        timerViewModel.totalSessionTime == 0 && appState != .idle
-    }
-    
     // MARK: – Init
     
     init() {
@@ -53,7 +49,6 @@ class ViewModel {
     
     func startSession() {
         appState = .running
-        timerViewModel.start()
     }
     
     func pauseSession() {
