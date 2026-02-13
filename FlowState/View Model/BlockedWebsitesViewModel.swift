@@ -18,6 +18,18 @@ class BlockedItem: Identifiable, Equatable {
     }
 }
 
+@Model
+class BlockedAppItem: Identifiable, Equatable {
+    var id = UUID()
+    var appName: String  // Display name extracted from the .app bundle (e.g. "Discord")
+    var appPath: String  // Full path to the .app (e.g. "/Applications/Discord.app")
+    
+    init(appName: String, appPath: String) {
+        self.appName = appName
+        self.appPath = appPath
+    }
+}
+
 @Observable
 class BlockedWebsitesViewModel {    
     
@@ -71,6 +83,62 @@ class BlockedWebsitesViewModel {
         let domain = blockedDomain.lowercased()
         return host == domain || host.hasSuffix("." + domain)
     }
+    
+    // MARK: - App Blocking
+    
+    /// Checks if the currently frontmost app matches any blocked app and hides it.
+    func hideBlockedApps(list: [BlockedAppItem]) {
+        guard !list.isEmpty else { return }
+        
+        guard let frontAppName = getFrontmostAppName() else { return }
+        
+        for blockedApp in list {
+            if frontAppName == blockedApp.appName {
+                hideApp(named: blockedApp.appName)
+                break
+            }
+        }
+    }
+    
+    /// Uses System Events to get the name of the currently frontmost application.
+    private func getFrontmostAppName() -> String? {
+        let appleScript = """
+            tell application "System Events"
+                set frontApp to name of first application process whose frontmost is true
+            end tell
+            return frontApp
+            """
+        
+        var error: NSDictionary?
+        if let scriptObject = NSAppleScript(source: appleScript) {
+            let output = scriptObject.executeAndReturnError(&error)
+            if let error = error {
+                print("Error getting frontmost app: \(error)")
+                return nil
+            }
+            return output.stringValue
+        }
+        return nil
+    }
+    
+    /// Uses System Events to hide a specific application process by name.
+    private func hideApp(named appName: String) {
+        let appleScript = """
+            tell application "System Events"
+                set visible of process "\(appName)" to false
+            end tell
+            """
+        
+        var error: NSDictionary?
+        if let scriptObject = NSAppleScript(source: appleScript) {
+            let _ = scriptObject.executeAndReturnError(&error)
+            if let error = error {
+                print("Error hiding app \(appName): \(error)")
+            }
+        }
+    }
+    
+    // MARK: - Redirect
     
     private func redirectToLocalPage() {
         guard let localPagePath = Bundle.main.path(forResource: "BlockPage", ofType: "html") else {

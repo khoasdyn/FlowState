@@ -18,6 +18,7 @@ class ViewModel {
     var appNavigationView: AppNavigationView = .home
     var appState: TimerState = .idle
     var blockedWebsites: [BlockedItem] = []
+    var blockedApps: [BlockedAppItem] = []
     
     // MARK: – Computed Properties
     
@@ -93,5 +94,6 @@ class ViewModel {
     func monitoring() {
         guard appState == .running else { return }
         blockedWebsitesViewModel.checkChromeURL(list: blockedWebsites)
+        blockedWebsitesViewModel.hideBlockedApps(list: blockedApps)
     }
 }

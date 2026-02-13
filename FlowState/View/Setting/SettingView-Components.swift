@@ -71,33 +71,31 @@ extension SettingView {
     @ViewBuilder
     var listBlockedWebsites: some View {
         if !blockedList.isEmpty {
-            ScrollView(.vertical) {
-                VStack(spacing: 8) {
-                    ForEach(blockedList) { website in
-                        HStack(spacing: 12) {
-                            Text(website.blockedURL)
-                                .foregroundStyle(.grayWarm950)
+            VStack(spacing: 8) {
+                ForEach(blockedList) { website in
+                    HStack(spacing: 12) {
+                        Text(website.blockedURL)
+                            .foregroundStyle(.grayWarm950)
+                            .font(.system(size: 14, weight: .semibold))
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            modelContext.delete(website)
+                        }) {
+                            Image(systemName: "multiply.circle.fill")
                                 .font(.system(size: 14, weight: .semibold))
-                                .lineLimit(1)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                modelContext.delete(website)
-                            }) {
-                                Image(systemName: "multiply.circle.fill")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(.grayWarm950)
-                            }
-                            .buttonStyle(.plain)
-                            
+                                .foregroundStyle(.grayWarm950)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
-                        .background(.grayWarm200)
-                        .clipShape(RoundedRectangle(cornerRadius: .infinity))
+                        .buttonStyle(.plain)
+                        
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(.grayWarm200)
+                    .clipShape(RoundedRectangle(cornerRadius: .infinity))
                 }
             }
         } else {
@@ -117,6 +115,93 @@ extension SettingView {
                     )
             }
             .buttonStyle(.plain)
+        }
+    }
+    
+    // MARK: - Blocked Apps Components
+    
+    var addAppButton: some View {
+        Button(action: {
+            showingAppPicker = true
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Choose App")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .foregroundStyle(.grayWarm950)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(.grayWarm950, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    @ViewBuilder
+    var listBlockedApps: some View {
+        if !blockedAppList.isEmpty {
+            VStack(spacing: 8) {
+                ForEach(blockedAppList) { app in
+                    HStack(spacing: 12) {
+                        // App icon from the bundle path
+                        AppIconView(appPath: app.appPath)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(app.appName)
+                                .foregroundStyle(.grayWarm950)
+                                .font(.system(size: 14, weight: .semibold))
+                                .lineLimit(1)
+                            
+                            Text(app.appPath)
+                                .foregroundStyle(.grayWarm400)
+                                .font(.system(size: 11, weight: .regular))
+                                .lineLimit(1)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            modelContext.delete(app)
+                        }) {
+                            Image(systemName: "multiply.circle.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.grayWarm950)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(.grayWarm200)
+                    .clipShape(RoundedRectangle(cornerRadius: .infinity))
+                }
+            }
+        }
+    }
+    
+    /// Handles the result from the file importer. Extracts the app name from the
+    /// selected .app bundle path and inserts it into SwiftData.
+    func handleAppSelection(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            
+            let appPath = url.path
+            
+            // Extract the display name by removing the .app extension from the filename
+            let appName = url.deletingPathExtension().lastPathComponent
+            
+            // Avoid duplicates
+            guard !blockedAppList.contains(where: { $0.appPath == appPath }) else { return }
+            
+            modelContext.insert(BlockedAppItem(appName: appName, appPath: appPath))
+            
+        case .failure(let error):
+            print("Error selecting app: \(error)")
         }
     }
     
