@@ -4,7 +4,7 @@
 
 FlowState is a macOS productivity app built entirely with SwiftUI. It combines a Pomodoro-style focus timer with a website blocker that prevents users from visiting distracting websites while a focus session is active. When the timer is running and the user navigates to a blocked website in their browser, the app automatically redirects the tab to a local "blocked" HTML page bundled inside the app.
 
-The app lives primarily in the macOS menu bar, giving the user quick access to start, pause, and stop focus sessions without switching away from their work. A main window provides a full UI for managing blocked websites, selecting focus categories, and controlling the timer.
+The app lives primarily in the macOS menu bar, giving the user quick access to start, pause, and stop focus sessions without switching away from their work. A main window provides a full UI for managing blocked websites and controlling the timer.
 
 ## How the website blocking works
 
@@ -61,7 +61,7 @@ When a color is used in a context where the type is already known to be `Color` 
 
 Do not use SwiftUI system colors like `.blue`, `.red`, `.gray`, `.orange`, `.purple`, `.mint`, or `.yellow`. Do not use the string-based initializer `Color("blue-500")`. Both of these patterns bypass the design system and make the color palette inconsistent across the app.
 
-The `AppConfig.ColorTheme` struct in `AppConfig.swift` defines semantic color aliases (like `primaryText`, `secondaryText`, `secondaryStroke`) that map to specific asset colors. Use these semantic names when referring to standard UI roles, and use the asset colors directly when applying category-specific or decorative colors.
+The `AppConfig.ColorTheme` struct in `AppConfig.swift` defines semantic color aliases (like `primaryText`, `secondaryText`, `secondaryStroke`) that map to specific asset colors. Use these semantic names when referring to standard UI roles, and use the asset colors directly when applying decorative or accent colors.
 
 ## Codebase overview
 
@@ -82,12 +82,8 @@ FlowState/
 │   └── flower.svg                  # Decorative image used in BlockPage.html
 ├── View/
 │   ├── Home/
-│   │   ├── HomeView.swift          # Main screen with timer and category display
+│   │   ├── HomeView.swift          # Main screen with timer display
 │   │   └── HomeView-Components.swift   # Extracted subviews (timer button, stop, settings)
-│   ├── Category/
-│   │   ├── CategoryEditView.swift          # Sheet for selecting a focus category
-│   │   ├── CategoryEditView-Components.swift   # Category list UI and close button
-│   │   └── CategoryEditView-ViewModel.swift    # Category data model and selection logic
 │   ├── Setting/
 │   │   ├── SettingView.swift           # Blocked websites editor screen
 │   │   └── SettingView-Components.swift    # URL input field, blocklist display
@@ -104,13 +100,11 @@ FlowState/
 
 **`FlowStateApp.swift`** — Defines the `@main` app struct with two scenes: a `WindowGroup` for the main window and a `MenuBarExtra` for the menu bar. The root `ViewModel` is owned here with `@State` and injected into both scenes using `.environment(viewModel)`. Contains `ContentView` which switches between `HomeView` and `SettingView` based on the navigation state. Also subscribes to the timer publisher and syncs the SwiftData blocklist to the view model on every tick.
 
-**`ViewModel.swift`** — The central `@Observable` coordinator that owns all child view models (`CategoryEditViewModel`, `BlockedWebsitesViewModel`, `TimerViewModel`). Holds the app's navigation state (`AppNavigationView`), the timer state (`TimerState`), and the current blocked websites array. All session control flows through this class: `handleTimer()` for the main toggle, plus `startSession()`, `pauseSession()`, `resumeSession()`, `resetSession()`, `addTime()`, and `subtractTime()` for direct control from the menu bar. The `countTime()` method is called every second from ContentView's `.onReceive` and coordinates both the timer tick and website monitoring. Views never call TimerViewModel directly — they always go through ViewModel. Views read this from the environment using `@Environment(ViewModel.self)`.
+**`ViewModel.swift`** — The central `@Observable` coordinator that owns all child view models (`BlockedWebsitesViewModel`, `TimerViewModel`). Holds the app's navigation state (`AppNavigationView`), the timer state (`TimerState`), and the current blocked websites array. All session control flows through this class: `handleTimer()` for the main toggle, plus `startSession()`, `pauseSession()`, `resumeSession()`, `resetSession()`, `addTime()`, and `subtractTime()` for direct control from the menu bar. The `countTime()` method is called every second from ContentView's `.onReceive` and coordinates both the timer tick and website monitoring. Views never call TimerViewModel directly — they always go through ViewModel. Views read this from the environment using `@Environment(ViewModel.self)`.
 
 **`BlockedWebsitesViewModel.swift`** — Contains two things: the `BlockedItem` SwiftData model class (a simple URL string with an ID), and the `BlockedWebsitesViewModel` class that executes AppleScript to read Chrome's active tab URL and redirect it if it matches a blocked domain. The `checkChromeURL(list:)` method is the core blocking function. The `redirectToLocalPage()` method constructs and executes the redirect AppleScript.
 
 **`TimerViewModel.swift`** — A self-contained timer that manages only time values with no reference to its parent. Owns `remainingTime` (the displayed countdown/countup value) and `totalSessionTime` (the original session duration, used to detect overtime). Publishes a 1-second timer via `Timer.publish(every: 1, ...)`. Provides `start()` to capture the session duration, `tick()` to advance one second, `reset()` to return to defaults, and `addTime()`/`subtractTime()` for adjustments. It does not know about app state, navigation, or website blocking — ViewModel calls its methods and makes all decisions.
-
-**`CategoryEditView-ViewModel.swift`** — Manages a list of predefined focus categories (Studying, Deep Work, Creative Work, Coding Session, Working), each with an emoji, title, and color. Tracks which category is currently selected and updates the UI accordingly. Passed to `CategoryEditView` as a plain `var` property (no wrapper needed with `@Observable`).
 
 **`AppConfig.swift`** — Central place for app-wide constants. Currently holds the default Pomodoro time (1500 seconds = 25 minutes) and a `ColorTheme` struct with semantic color references used throughout the UI.
 
@@ -149,13 +143,9 @@ The ownership flows strictly downward: views call ViewModel, ViewModel calls Tim
 
 **`@AppStorage`** is used for the `showMenuBarExtra` toggle that controls whether the menu bar item appears.
 
-Categories and the selected category are **not persisted** — they reset to defaults on every app launch.
-
 ### Navigation
 
 The app uses a simple enum-based navigation system rather than `NavigationStack`. `ViewModel.appNavigationView` holds the current screen as an `AppNavigationView` enum value (`.home` or `.edit`), and `ContentView` switches between `HomeView` and `SettingView` based on this value.
-
-The category selector appears as a `.sheet()` presented from `HomeView`.
 
 ### Timer states
 

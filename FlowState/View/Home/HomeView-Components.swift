@@ -10,16 +10,11 @@ import SwiftUI
 extension HomeView {
     var header: some View {
         VStack(spacing: 0) {
-            Text(viewModel.categoryEditViewModel.selectedCategory.emoji)
+            Text("🧘‍♂️")
                 .font(.system(size: 64, weight: .semibold))
-            Text(viewModel.categoryEditViewModel.selectedCategory.title)
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundStyle(AppConfig.ColorTheme.primaryText)
-                .multilineTextAlignment(.center)
             
             Text("Session Ended!")
                 .opacity(viewModel.checkOverTime ? 1 : 0)
-            
         }
         .frame(maxWidth: 300)
     }
@@ -42,40 +37,7 @@ extension HomeView {
         }
     }
     
-    var editCategoryButton: some View {
-        Button(action: {
-            showCategorySheet.toggle()
-        }) {
-            HStack(spacing: 8) {
-                HStack(spacing: 6) {
-                    Circle()
-                        .foregroundStyle(viewModel.categoryEditViewModel.selectedCategory.color)
-                        .frame(width: 8, height: 8)
-                    Text("Edit Category")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(viewModel.categoryEditViewModel.selectedCategory.color)
-                }
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(AppConfig.ColorTheme.secondaryText)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .clipShape(RoundedRectangle(cornerRadius: .infinity))
-            .overlay(
-                RoundedRectangle(cornerRadius: .infinity)
-                    .stroke(.grayWarm200, lineWidth: 2)
-            )
-        }
-        .buttonStyle(.plain)
-        .sheet(isPresented: $showCategorySheet) {
-            CategoryEditView(viewModel: viewModel.categoryEditViewModel)
-                .frame(maxWidth: 520, maxHeight: 560)
-        }
-        .buttonStyle(.plain)
-    }
-    
-    var stopButton : some View {
+    var stopButton: some View {
         Button(action: {
             viewModel.resetSession()
         }) {
@@ -99,7 +61,6 @@ extension HomeView {
                     .font(.system(size: 20, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
                     .symbolEffect(.bounce.up.byLayer, options: .repeat(.periodic(delay: 2.0)))
-                //                    .symbolEffect(.breathe.plain.wholeSymbol, options: .repeat(.continuous))
                 Text(viewModel.appState == .running ? "Blocking" : "Stopped")
                     .font(.system(size: 14, weight: .semibold))
             }
@@ -130,7 +91,7 @@ extension HomeView {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 24)
             .foregroundStyle(.white)
-            .background(viewModel.categoryEditViewModel.selectedCategory.color)
+            .background(.blue600)
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)

@@ -116,7 +116,7 @@ extension SettingView {
                     .foregroundStyle(.white)
                     .background(
                         Capsule()
-                            .fill(viewModel.categoryEditViewModel.selectedCategory.color) // from UIKit
+                            .fill(.brand500)
                     )
             }
             .buttonStyle(.plain)

@@ -10,15 +10,11 @@ import Foundation
 
 struct HomeView: View {
     @Environment(ViewModel.self) var viewModel
-    @State var showCategorySheet = false
     
     var body: some View {
-        VStack(spacing: 96) {
-            editCategoryButton
-            VStack(spacing: 24) {
-                header
-                mainGroupButtons
-            }
+        VStack(spacing: 24) {
+            header
+            mainGroupButtons
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 24)

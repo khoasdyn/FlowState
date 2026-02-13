@@ -11,7 +11,6 @@ import Foundation
 @Observable
 class ViewModel {
     // MARK: - Child Model
-    var categoryEditViewModel: CategoryEditViewModel
     var blockedWebsitesViewModel: BlockedWebsitesViewModel
     var timerViewModel: TimerViewModel
     
@@ -35,7 +34,6 @@ class ViewModel {
     // MARK: – Init
     
     init() {
-        self.categoryEditViewModel = CategoryEditViewModel()
         self.blockedWebsitesViewModel = BlockedWebsitesViewModel()
         self.timerViewModel = TimerViewModel()
     }
