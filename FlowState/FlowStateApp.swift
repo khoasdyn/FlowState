@@ -23,7 +23,7 @@ struct FlowStateApp: App {
             ContentView()
                 .frame(minWidth: 500, maxWidth: 600, minHeight: 640, maxHeight: 700)
                 .preferredColorScheme(.light)
-                .modelContainer(for: [BlockedItem.self, BlockedAppItem.self])
+                .modelContainer(for: [BlockedWebsite.self, BlockedApp.self])
                 .environment(viewModel)
         }
         .windowResizability(.contentSize)
@@ -36,8 +36,8 @@ struct FlowStateApp: App {
 
 struct ContentView: View {
     @Environment(ViewModel.self) var viewModel
-    @Query var blockedList: [BlockedItem]
-    @Query var blockedAppList: [BlockedAppItem]
+    @Query var blockedWebsiteList: [BlockedWebsite]
+    @Query var blockedAppList: [BlockedApp]
     
     var body: some View {
         Group {
@@ -50,7 +50,7 @@ struct ContentView: View {
         }
         .onReceive(viewModel.timerViewModel.timer) { _ in
             viewModel.countTime()
-            viewModel.blockedWebsites = blockedList
+            viewModel.blockedWebsites = blockedWebsiteList
             viewModel.blockedApps = blockedAppList
         }
     }

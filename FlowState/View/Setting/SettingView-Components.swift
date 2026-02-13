@@ -38,18 +38,16 @@ extension SettingView {
                 return
             }
             
-            guard !blockedList.contains(where: { $0.blockedURL == cleaned }) else { // Duplicate
+            guard !blockedWebsiteList.contains(where: { $0.domain == cleaned }) else {
                 isValidURL = true
                 inputURL = ""
                 return
             }
             
-            // Add data
-            modelContext.insert(BlockedItem(blockedURL: cleaned))
+            modelContext.insert(BlockedWebsite(domain: cleaned))
             inputURL = ""
             isValidURL = true
         }
-
     }
     
     var backButton: some View {
@@ -70,11 +68,11 @@ extension SettingView {
     
     @ViewBuilder
     var listBlockedWebsites: some View {
-        if !blockedList.isEmpty {
+        if !blockedWebsiteList.isEmpty {
             VStack(spacing: 8) {
-                ForEach(blockedList) { website in
+                ForEach(blockedWebsiteList) { website in
                     HStack(spacing: 12) {
-                        Text(website.blockedURL)
+                        Text(website.domain)
                             .foregroundStyle(.grayWarm950)
                             .font(.system(size: 14, weight: .semibold))
                             .lineLimit(1)
@@ -89,7 +87,6 @@ extension SettingView {
                                 .foregroundStyle(.grayWarm950)
                         }
                         .buttonStyle(.plain)
-                        
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)
@@ -100,10 +97,10 @@ extension SettingView {
             }
         } else {
             Button {
-                modelContext.insert(BlockedItem(blockedURL: "facebook.com"))
-                modelContext.insert(BlockedItem(blockedURL: "x.com"))
-                modelContext.insert(BlockedItem(blockedURL: "reddit.com"))
-                modelContext.insert(BlockedItem(blockedURL: "tiktok.com"))
+                modelContext.insert(BlockedWebsite(domain: "facebook.com"))
+                modelContext.insert(BlockedWebsite(domain: "x.com"))
+                modelContext.insert(BlockedWebsite(domain: "reddit.com"))
+                modelContext.insert(BlockedWebsite(domain: "tiktok.com"))
             } label: {
                 Text("Add suggested websites")
                     .padding(.horizontal, 24)
@@ -147,16 +144,15 @@ extension SettingView {
             VStack(spacing: 8) {
                 ForEach(blockedAppList) { app in
                     HStack(spacing: 12) {
-                        // App icon from the bundle path
-                        AppIconView(appPath: app.appPath)
+                        AppIconView(appPath: app.path)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(app.appName)
+                            Text(app.name)
                                 .foregroundStyle(.grayWarm950)
                                 .font(.system(size: 14, weight: .semibold))
                                 .lineLimit(1)
                             
-                            Text(app.appPath)
+                            Text(app.path)
                                 .foregroundStyle(.grayWarm400)
                                 .font(.system(size: 11, weight: .regular))
                                 .lineLimit(1)
@@ -183,22 +179,17 @@ extension SettingView {
         }
     }
     
-    /// Handles the result from the file importer. Extracts the app name from the
-    /// selected .app bundle path and inserts it into SwiftData.
     func handleAppSelection(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
             
             let appPath = url.path
-            
-            // Extract the display name by removing the .app extension from the filename
             let appName = url.deletingPathExtension().lastPathComponent
             
-            // Avoid duplicates
-            guard !blockedAppList.contains(where: { $0.appPath == appPath }) else { return }
+            guard !blockedAppList.contains(where: { $0.path == appPath }) else { return }
             
-            modelContext.insert(BlockedAppItem(appName: appName, appPath: appPath))
+            modelContext.insert(BlockedApp(name: appName, path: appPath))
             
         case .failure(let error):
             print("Error selecting app: \(error)")
@@ -207,26 +198,21 @@ extension SettingView {
     
     // MARK: - Helpers
     
-    /// Strips common URL prefixes (http://, https://, www.) and trailing slashes
-    /// so the user can paste a full URL and it gets stored as a clean domain.
     private func cleanDomainInput(_ input: String) -> String {
         var result = input
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
         
-        // Remove scheme
         for prefix in ["https://", "http://"] {
             if result.hasPrefix(prefix) {
                 result = String(result.dropFirst(prefix.count))
             }
         }
         
-        // Remove www.
         if result.hasPrefix("www.") {
             result = String(result.dropFirst(4))
         }
         
-        // Remove trailing slash and path
         if let slashIndex = result.firstIndex(of: "/") {
             result = String(result[result.startIndex..<slashIndex])
         }
@@ -234,9 +220,6 @@ extension SettingView {
         return result
     }
     
-    /// Checks that the cleaned string looks like a valid domain name.
-    /// Must contain only letters, numbers, dots, and hyphens, and end with
-    /// a dot followed by at least two letters (e.g. .com, .org, .io).
     private func isValidDomain(_ domain: String) -> Bool {
         let pattern = #"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
         return domain.range(of: pattern, options: .regularExpression) != nil

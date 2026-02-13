@@ -10,17 +10,18 @@ import Foundation
 
 @Observable
 class ViewModel {
-    // MARK: - Child Model
-    var blockedWebsitesViewModel: BlockedWebsitesViewModel
+    // MARK: - Child Services
+    var websiteBlocker: WebsiteBlocker
+    var appBlocker: AppBlocker
     var timerViewModel: TimerViewModel
     
-    // MARK: – App Management
+    // MARK: - App Management
     var appNavigationView: AppNavigationView = .home
     var appState: TimerState = .idle
-    var blockedWebsites: [BlockedItem] = []
-    var blockedApps: [BlockedAppItem] = []
+    var blockedWebsites: [BlockedWebsite] = []
+    var blockedApps: [BlockedApp] = []
     
-    // MARK: – Computed Properties
+    // MARK: - Computed Properties
     
     var formattedTime: String {
         let minutes = timerViewModel.remainingTime / 60
@@ -28,14 +29,15 @@ class ViewModel {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    // MARK: – Init
+    // MARK: - Init
     
     init() {
-        self.blockedWebsitesViewModel = BlockedWebsitesViewModel()
+        self.websiteBlocker = WebsiteBlocker()
+        self.appBlocker = AppBlocker()
         self.timerViewModel = TimerViewModel()
     }
     
-    // MARK: – Session Control
+    // MARK: - Session Control
     
     func handleTimer() {
         switch appState {
@@ -77,7 +79,7 @@ class ViewModel {
         timerViewModel.subtractTime()
     }
     
-    // MARK: – Timer Tick (called every second from ContentView's .onReceive)
+    // MARK: - Timer Tick (called every second from ContentView's .onReceive)
     
     func countTime() {
         guard appState == .running else { return }
@@ -89,11 +91,11 @@ class ViewModel {
         }
     }
     
-    // MARK: – Website Monitoring
+    // MARK: - Blocking
     
     func monitoring() {
         guard appState == .running else { return }
-        blockedWebsitesViewModel.checkChromeURL(list: blockedWebsites)
-        blockedWebsitesViewModel.hideBlockedApps(list: blockedApps)
+        websiteBlocker.check(against: blockedWebsites)
+        appBlocker.check(against: blockedApps)
     }
 }

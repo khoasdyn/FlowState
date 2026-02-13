@@ -12,8 +12,8 @@ import UniformTypeIdentifiers
 struct SettingView: View {
     @Environment(ViewModel.self) var viewModel
     @Environment(\.modelContext) var modelContext
-    @Query var blockedList: [BlockedItem]
-    @Query var blockedAppList: [BlockedAppItem]
+    @Query var blockedWebsiteList: [BlockedWebsite]
+    @Query var blockedAppList: [BlockedApp]
     
     @State var inputURL: String = ""
     @State var isValidURL: Bool = true
@@ -54,7 +54,7 @@ struct SettingView: View {
                         listBlockedApps
                     }
                 }
-                .padding(.horizontal, 2)
+                .padding(.horizontal, 1)
             }
         }
         .padding(.horizontal, 16)
