@@ -34,7 +34,7 @@ extension CategoryEditView {
                         .padding(.vertical, 16)
                         .padding(.horizontal, 16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(category.color.opacity(0.2))
+                        .background(category.color.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         //                .overlay(
                         //                    RoundedRectangle(cornerRadius: 16)

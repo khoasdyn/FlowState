@@ -18,11 +18,11 @@ struct Category: Identifiable, Hashable {
 @Observable
 class CategoryEditViewModel {
     let initialCategories = [
-        Category(emoji: "📚", title: "Studying", color: .blue500, isSelected: true),
-        Category(emoji: "🧠", title: "Deep Work", color: .purple500),
-        Category(emoji: "🎨", title: "Creative Work", color: .cyan500),
-        Category(emoji: "🧑🏻‍💻", title: "Coding Session", color: .orange500),
-        Category(emoji: "🎯", title: "Working", color: .yellow500)
+        Category(emoji: "📚", title: "Studying", color: .blue600, isSelected: true),
+        Category(emoji: "🧠", title: "Deep Work", color: .purple600),
+        Category(emoji: "🎨", title: "Creative Work", color: .cyan600),
+        Category(emoji: "🧑🏻‍💻", title: "Coding Session", color: .orange600),
+        Category(emoji: "🎯", title: "Working", color: .yellow600)
     ]
     
     var categories: [Category] = []
