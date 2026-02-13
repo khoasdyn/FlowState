@@ -39,7 +39,7 @@ Uses `.windowStyle(.hiddenTitleBar)` for a clean look. Traffic light buttons flo
 
 ### Focus image
 
-The campfire image shows when running, marshmallow when idle/paused. Transition uses `.blurReplace` with `.easeInOut(duration: 0.4)`.
+The campfire image shows when running, marshmallow when idle/paused.
 
 ### Block page (BlockPage.html)
 

@@ -18,8 +18,8 @@ class ViewModel {
     // MARK: - App Management
     var appNavigationView: AppNavigationView = .home
     var appState: TimerState = .idle
-    var blockedWebsites: [BlockedWebsite] = []
-    var blockedApps: [BlockedApp] = []
+    var blockedDomains: [String] = []
+    var blockedAppNames: [String] = []
     
     // MARK: - Computed Properties
     
@@ -95,7 +95,7 @@ class ViewModel {
     
     func monitoring() {
         guard appState == .running else { return }
-        websiteBlocker.check(against: blockedWebsites)
-        appBlocker.check(against: blockedApps)
+        websiteBlocker.check(against: blockedDomains)
+        appBlocker.check(against: blockedAppNames)
     }
 }

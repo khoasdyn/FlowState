@@ -49,9 +49,9 @@ struct ContentView: View {
             }
         }
         .onReceive(viewModel.timerViewModel.timer) { _ in
+            viewModel.blockedDomains = blockedWebsiteList.map { $0.domain }
+            viewModel.blockedAppNames = blockedAppList.map { $0.name }
             viewModel.countTime()
-            viewModel.blockedWebsites = blockedWebsiteList
-            viewModel.blockedApps = blockedAppList
         }
     }
 }

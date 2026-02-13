@@ -11,7 +11,7 @@ import Foundation
 class WebsiteBlocker {
     
     /// Checks Chrome's active tab URL against the blocklist and redirects if matched.
-    func check(against blocklist: [BlockedWebsite]) {
+    func check(against blocklist: [String]) {
         let appleScript = """
             tell application "Google Chrome"
                 set currentTabURL to URL of active tab of window 1
@@ -29,8 +29,8 @@ class WebsiteBlocker {
                 
                 guard let host = extractHost(from: currentURL) else { return }
                 
-                for item in blocklist {
-                    if isHostBlocked(host: host, blockedDomain: item.domain) {
+                for domain in blocklist {
+                    if isHostBlocked(host: host, blockedDomain: domain) {
                         redirectToBlockPage()
                         break
                     }

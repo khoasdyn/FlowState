@@ -11,13 +11,13 @@ import Foundation
 class AppBlocker {
     
     /// Checks if the frontmost app matches any blocked app and hides it.
-    func check(against blocklist: [BlockedApp]) {
+    func check(against blocklist: [String]) {
         guard !blocklist.isEmpty else { return }
         guard let frontAppName = getFrontmostAppName() else { return }
         
-        for app in blocklist {
-            if frontAppName == app.name {
-                hide(appNamed: app.name)
+        for appName in blocklist {
+            if frontAppName == appName {
+                hide(appNamed: appName)
                 break
             }
         }
