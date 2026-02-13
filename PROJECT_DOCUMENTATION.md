@@ -87,6 +87,12 @@ FlowState/
 ├── Resource/
 │   ├── BlockPage.html
 │   └── direction-board.png
+├── Model/
+│   ├── BlockedWebsite.swift            # SwiftData model (domain string)
+│   └── BlockedApp.swift                # SwiftData model (name + path)
+├── Service/
+│   ├── WebsiteBlocker.swift            # AppleScript: read browser URL, match, redirect
+│   └── AppBlocker.swift                # AppleScript: get frontmost app, hide if blocked
 ├── View/
 │   ├── Home/
 │   │   ├── HomeView.swift
@@ -100,7 +106,6 @@ FlowState/
 │       └── MenuBarItem.swift
 └── View Model/
     ├── ViewModel.swift                 # Central coordinator
-    ├── BlockedWebsitesViewModel.swift  # Apple Events logic + BlockedItem/BlockedAppItem models
     └── TimerViewModel.swift            # Countdown timer logic
 ```
 
@@ -108,9 +113,15 @@ FlowState/
 
 **`FlowStateApp.swift`** — Two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. Owns the root `ViewModel` with `@State`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and syncs both `@Query` blocklists to the view model on every tick.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `BlockedWebsitesViewModel` and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and both blocked lists. All session control goes through this class. `countTime()` runs every second and calls `monitoring()` which triggers both website checking and app hiding. Views never call child view models directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and both blocked lists. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Views never call child services directly.
 
-**`BlockedWebsitesViewModel.swift`** — Contains `BlockedItem` and `BlockedAppItem` SwiftData models, plus all Apple Events logic. Website blocking: `checkChromeURL(list:)` extracts host, checks domain/subdomain match, redirects via `redirectToLocalPage()`. App blocking: `hideBlockedApps(list:)` gets the frontmost app name via System Events and hides it if matched.
+**`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
+
+**`AppBlocker.swift`** — `@Observable` service. `check(against:)` gets the frontmost app name via System Events AppleScript (`getFrontmostAppName()`), and hides it via `hide(appNamed:)` if it matches a blocked app.
+
+**`BlockedWebsite.swift`** — SwiftData `@Model` with a single `domain` property (e.g. `"facebook.com"`).
+
+**`BlockedApp.swift`** — SwiftData `@Model` with `name` (e.g. `"Discord"`) and `path` (e.g. `"/Applications/Discord.app"`).
 
 **`TimerViewModel.swift`** — Self-contained timer with `remainingTime`, `selectedMinutes`, 1-second publisher, `tick()`, `reset()`, `selectDuration(_:)`, and `addTime()`/`subtractTime()`. No reference to parent.
 
@@ -129,16 +140,16 @@ Every 1 second (.onReceive in ContentView):
     → ViewModel.countTime()
         → Guard: only runs if appState == .running
         → ViewModel.monitoring()
-            → checkChromeURL(list:)     — extract host, match domain, redirect if blocked
-            → hideBlockedApps(list:)    — get frontmost app, hide if blocked
+            → websiteBlocker.check(against:)  — extract host, match domain, redirect
+            → appBlocker.check(against:)      — get frontmost app, hide if blocked
         → TimerViewModel.tick()
         → If remainingTime <= 0: resetSession()
-    → Sync @Query blockedList and blockedAppList to ViewModel
+    → Sync @Query blockedWebsiteList and blockedAppList to ViewModel
 ```
 
 ### Data persistence
 
-**SwiftData** stores both `BlockedItem` (website URL) and `BlockedAppItem` (app name + path). Model container registered for both in `FlowStateApp`. Views use `@Query` to read and `@Environment(\.modelContext)` to write.
+**SwiftData** stores `BlockedWebsite` (domain) and `BlockedApp` (name + path). Model container registered for both in `FlowStateApp`. Views use `@Query` to read and `@Environment(\.modelContext)` to write.
 
 **`@AppStorage`** stores the `showMenuBarExtra` toggle.
 

@@ -11,8 +11,8 @@ import Foundation
 @Model
 class BlockedApp: Identifiable, Equatable {
     var id = UUID()
-    var name: String   // Display name (e.g. "Discord")
-    var path: String   // Full path (e.g. "/Applications/Discord.app")
+    var name: String
+    var path: String
     
     init(name: String, path: String) {
         self.name = name
