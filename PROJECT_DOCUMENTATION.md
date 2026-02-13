@@ -111,13 +111,13 @@ FlowState/
 
 ### Key files
 
-**`FlowStateApp.swift`** — Two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. Owns the root `ViewModel` with `@State`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and syncs both `@Query` blocklists to the view model on every tick.
+**`FlowStateApp.swift`** — Two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. Owns the root `ViewModel` with `@State`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and on every tick maps `@Query` results to plain `[String]` arrays before passing them to the view model. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and both blocked lists. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Views never call child services directly.
 
-**`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
+**`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
 
-**`AppBlocker.swift`** — `@Observable` service. `check(against:)` gets the frontmost app name via System Events AppleScript (`getFrontmostAppName()`), and hides it via `hide(appNamed:)` if it matches a blocked app.
+**`AppBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (app name strings), gets the frontmost app name via System Events AppleScript (`getFrontmostAppName()`), and hides it via `hide(appNamed:)` if it matches a blocked app.
 
 **`BlockedWebsite.swift`** — SwiftData `@Model` with a single `domain` property (e.g. `"facebook.com"`).
 
@@ -129,7 +129,7 @@ FlowState/
 
 **`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
 
-**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData.
+**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately, even if the window is closed before SwiftData's autosave triggers.
 
 **`AppIconView.swift`** — Displays an app's icon using `NSWorkspace.shared.icon(forFile:)` given the app's path.
 
@@ -137,19 +137,23 @@ FlowState/
 
 ```
 Every 1 second (.onReceive in ContentView):
+    → Map @Query results to plain [String] arrays on ViewModel
+        → blockedDomains = blockedWebsiteList.map { $0.domain }
+        → blockedAppNames = blockedAppList.map { $0.name }
     → ViewModel.countTime()
         → Guard: only runs if appState == .running
         → ViewModel.monitoring()
-            → websiteBlocker.check(against:)  — extract host, match domain, redirect
-            → appBlocker.check(against:)      — get frontmost app, hide if blocked
+            → websiteBlocker.check(against: [String])  — extract host, match domain, redirect
+            → appBlocker.check(against: [String])      — get frontmost app, hide if blocked
         → TimerViewModel.tick()
         → If remainingTime <= 0: resetSession()
-    → Sync @Query blockedWebsiteList and blockedAppList to ViewModel
 ```
 
 ### Data persistence
 
-**SwiftData** stores `BlockedWebsite` (domain) and `BlockedApp` (name + path). Model container registered for both in `FlowStateApp`. Views use `@Query` to read and `@Environment(\.modelContext)` to write.
+**SwiftData** stores `BlockedWebsite` (domain) and `BlockedApp` (name + path). Model container registered for both in `FlowStateApp`. Views use `@Query` to read and `@Environment(\.modelContext)` to write. All mutations are followed by an explicit `try? modelContext.save()` to guarantee persistence before window closure.
+
+**Important:** SwiftData `@Model` objects must not be stored or accessed outside of a valid `ModelContext`. The ViewModel only holds plain `[String]` arrays extracted from `@Query` results inside the view layer, where the context is guaranteed to be alive. Storing `@Model` objects directly in the ViewModel and accessing their properties later (e.g. from a timer callback) causes faulting crashes because the context may have been deallocated.
 
 **`@AppStorage`** stores the `showMenuBarExtra` toggle.
 

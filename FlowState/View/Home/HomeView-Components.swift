@@ -49,10 +49,14 @@ extension HomeView {
             timerButton
             
             HStack(spacing: 6) {
-                stopButton
+                if viewModel.appState != .idle {
+                    stopButton
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                }
                 settingButton
             }
             .frame(maxWidth: 300)
+            .animation(.smooth(duration: 0.3), value: viewModel.appState)
             
             Text("Start the timer to block sites on your list.")
                 .font(.system(size: 12, weight: .medium))
@@ -64,7 +68,7 @@ extension HomeView {
     
     var stopButton: some View {
         Button(action: {
-            viewModel.resetSession()
+            showStopConfirmationModal()
         }) {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: 20, weight: .semibold))
