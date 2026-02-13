@@ -13,7 +13,6 @@ struct AppConfig {
     struct ColorTheme {
         static let primaryText = Color.grayWarm900
         static let secondaryText = Color.grayWarm400
-//        static let secondaryBackgroundButton = Color.grayWarm200
         static let secondaryStroke = Color.grayWarm200
     }
 }
