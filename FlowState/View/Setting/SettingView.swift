@@ -54,6 +54,7 @@ struct SettingView: View {
                         listBlockedApps
                     }
                 }
+                .padding(.horizontal, 2)
             }
         }
         .padding(.horizontal, 16)
