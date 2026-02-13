@@ -15,7 +15,7 @@ enum AppNavigationView {
 
 @main
 struct FlowStateApp: App {
-    @StateObject var viewModel = ViewModel()
+    @State var viewModel = ViewModel()
     @AppStorage("showMenuBarExtra") private var showMenuBarExtra = true
     
     var body: some Scene {
@@ -24,17 +24,17 @@ struct FlowStateApp: App {
                 .frame(minWidth: 450, maxWidth: 600, minHeight: 550, maxHeight: 640)
                 .preferredColorScheme(.light)
                 .modelContainer(for: BlockedItem.self)
-                .environmentObject(viewModel)
+                .environment(viewModel)
         }
         .windowResizability(.contentSize)
         
         MenuBarScene(showMenuBarExtra: $showMenuBarExtra)
-            .environmentObject(viewModel)
+            .environment(viewModel)
     }
 }
 
 struct ContentView: View {
-    @EnvironmentObject var viewModel: ViewModel
+    @Environment(ViewModel.self) var viewModel
     @Query var blockedList: [BlockedItem]
     
     var body: some View {

@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 struct MenuBarItem: View {
-    @EnvironmentObject var viewModel: ViewModel
+    @Environment(ViewModel.self) var viewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

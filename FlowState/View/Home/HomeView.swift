@@ -9,7 +9,7 @@ import SwiftUI
 import Foundation
 
 struct HomeView: View {
-    @EnvironmentObject var viewModel: ViewModel
+    @Environment(ViewModel.self) var viewModel
     @State var showCategorySheet = false
     
     var body: some View {

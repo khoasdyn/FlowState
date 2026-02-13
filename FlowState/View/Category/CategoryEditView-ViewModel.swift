@@ -16,7 +16,7 @@ struct Category: Identifiable, Hashable {
 }
 
 @Observable
-class CategoryEditViewModel: ObservableObject {
+class CategoryEditViewModel {
     let initialCategories = [
         Category(emoji: "📚", title: "Studying", color: .blue, isSelected: true),
         Category(emoji: "🧠", title: "Deep Work", color: .purple),

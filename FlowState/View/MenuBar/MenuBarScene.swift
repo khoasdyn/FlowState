@@ -2,12 +2,12 @@ import SwiftUI
 
 struct MenuBarScene: Scene {
     @Binding var showMenuBarExtra: Bool
-    @EnvironmentObject var viewModel: ViewModel
+    @Environment(ViewModel.self) var viewModel
     
     var body: some Scene {
         MenuBarExtra(isInserted: $showMenuBarExtra) {
             MenuBarItem()
-                .environmentObject(viewModel)
+                .environment(viewModel)
         } label: {
             HStack(spacing: 24) {
                 Image(systemName: "timer")

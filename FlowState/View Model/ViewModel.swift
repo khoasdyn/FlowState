@@ -9,7 +9,7 @@ import SwiftUI
 import Foundation
 
 @Observable
-class ViewModel: ObservableObject {
+class ViewModel {
     // MARK: - Child Model
     var categoryEditViewModel: CategoryEditViewModel
     var blockedWebsitesViewModel: BlockedWebsitesViewModel

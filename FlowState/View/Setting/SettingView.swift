@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct SettingView: View {
-    @EnvironmentObject var viewModel: ViewModel
+    @Environment(ViewModel.self) var viewModel
     @Environment(\.modelContext) var modelContext
     @Query var blockedList: [BlockedItem]
     

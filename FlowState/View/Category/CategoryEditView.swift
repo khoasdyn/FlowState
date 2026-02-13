@@ -10,7 +10,7 @@ import SwiftUI
 
 struct CategoryEditView: View {
     @Environment(\.dismiss) var dismiss
-    @ObservedObject var viewModel: CategoryEditViewModel
+    var viewModel: CategoryEditViewModel
     
     
     var body: some View {

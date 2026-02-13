@@ -16,7 +16,7 @@ enum TimerState {
 
 
 @Observable
-class TimerViewModel: ObservableObject {
+class TimerViewModel {
     
     // MARK: - Properties
     var viewModel: ViewModel?

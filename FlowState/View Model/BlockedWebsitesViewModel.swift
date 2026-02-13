@@ -19,7 +19,7 @@ class BlockedItem: Identifiable, Equatable {
 }
 
 @Observable
-class BlockedWebsitesViewModel: ObservableObject {    
+class BlockedWebsitesViewModel {    
     
     func checkChromeURL(list: [BlockedItem]) {
         let appleScript = """

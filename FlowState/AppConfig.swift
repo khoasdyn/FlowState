@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AppConfig {
-    static let pomodoroTime: Int = 5 // 1500 seconds = 25 minutes
+    static let pomodoroTime: Int = 1500 // 1500 seconds = 25 minutes
     
     struct ColorTheme {
         static let primaryText = Color.grayWarm900
