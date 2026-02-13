@@ -64,6 +64,10 @@ class ViewModel {
         timerViewModel.reset()
     }
     
+    func selectDuration(_ minutes: Int) {
+        timerViewModel.selectDuration(minutes)
+    }
+    
     func addTime() {
         timerViewModel.addTime()
     }

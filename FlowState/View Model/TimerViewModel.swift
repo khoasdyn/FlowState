@@ -20,9 +20,16 @@ class TimerViewModel {
     // MARK: - Properties
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     let timeAmount: Int = 300 // 300 seconds = 5 minutes
-    var remainingTime: Int = AppConfig.pomodoroTime
+    var selectedMinutes: Int = AppConfig.defaultDuration
+    var remainingTime: Int = AppConfig.defaultDuration * 60
     
     // MARK: - Methods
+    
+    /// Updates the selected duration and resets the countdown to match.
+    func selectDuration(_ minutes: Int) {
+        selectedMinutes = minutes
+        remainingTime = minutes * 60
+    }
     
     /// Called every second while the session is running.
     /// Counts down and stops at zero.
@@ -32,9 +39,9 @@ class TimerViewModel {
         }
     }
     
-    /// Resets the timer back to the default Pomodoro duration.
+    /// Resets the timer back to the currently selected duration.
     func reset() {
-        remainingTime = AppConfig.pomodoroTime
+        remainingTime = selectedMinutes * 60
     }
     
     func addTime() {

@@ -12,7 +12,8 @@ struct HomeView: View {
     @Environment(ViewModel.self) var viewModel
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 32) {
+            durationPicker
             header
             mainGroupButtons
         }

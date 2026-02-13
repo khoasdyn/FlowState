@@ -8,6 +8,35 @@
 import SwiftUI
 
 extension HomeView {
+    var durationPicker: some View {
+        HStack(spacing: 6) {
+            ForEach(AppConfig.durationPresets, id: \.self) { minutes in
+                Button(action: {
+                    viewModel.selectDuration(minutes)
+                }) {
+                    Text("\(minutes)m")
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .foregroundStyle(
+                            viewModel.timerViewModel.selectedMinutes == minutes
+                            ? .white
+                            : AppConfig.ColorTheme.secondaryText
+                        )
+                        .background(
+                            viewModel.timerViewModel.selectedMinutes == minutes
+                            ? Color.grayWarm900
+                            : Color.grayWarm200
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: .infinity))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .disabled(viewModel.appState != .idle)
+        .opacity(viewModel.appState != .idle ? 0.4 : 1)
+    }
+    
     var header: some View {
         Text("🧘‍♂️")
             .font(.system(size: 96, weight: .semibold))
