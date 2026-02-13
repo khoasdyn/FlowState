@@ -92,11 +92,11 @@ FlowState/
 
 **`FlowStateApp.swift`** — Defines the `@main` app struct with two scenes: a `WindowGroup` for the main window and a `MenuBarExtra` for the menu bar. The root `ViewModel` is owned here with `@State` and injected into both scenes using `.environment(viewModel)`. Contains `ContentView` which switches between `HomeView` and `SettingView` based on the navigation state. Also subscribes to the timer publisher and syncs the SwiftData blocklist to the view model on every tick.
 
-**`ViewModel.swift`** — The central `@Observable` coordinator that owns all child view models (`CategoryEditViewModel`, `BlockedWebsitesViewModel`, `TimerViewModel`). Holds the app's navigation state (`AppNavigationView`), the timer state (`TimerState`), and the current blocked websites array. Provides `handleTimer()` for start/pause/resume logic and `monitoring()` which delegates to the blocking view model. Views read this from the environment using `@Environment(ViewModel.self)`.
+**`ViewModel.swift`** — The central `@Observable` coordinator that owns all child view models (`CategoryEditViewModel`, `BlockedWebsitesViewModel`, `TimerViewModel`). Holds the app's navigation state (`AppNavigationView`), the timer state (`TimerState`), and the current blocked websites array. All session control flows through this class: `handleTimer()` for the main toggle, plus `startSession()`, `pauseSession()`, `resumeSession()`, `resetSession()`, `addTime()`, and `subtractTime()` for direct control from the menu bar. The `countTime()` method is called every second from ContentView's `.onReceive` and coordinates both the timer tick and website monitoring. Views never call TimerViewModel directly — they always go through ViewModel. Views read this from the environment using `@Environment(ViewModel.self)`.
 
 **`BlockedWebsitesViewModel.swift`** — Contains two things: the `BlockedItem` SwiftData model class (a simple URL string with an ID), and the `BlockedWebsitesViewModel` class that executes AppleScript to read Chrome's active tab URL and redirect it if it matches a blocked domain. The `checkChromeURL(list:)` method is the core blocking function. The `redirectToLocalPage()` method constructs and executes the redirect AppleScript.
 
-**`TimerViewModel.swift`** — Manages the countdown timer using `Timer.publish(every: 1, ...)`. Owns the `currentSessionTime` (total duration of the session) and delegates time mutations back to the parent `ViewModel`. Provides `start()`, `pause()`, `resume()`, `reset()`, `addTime()`, and `subtractTime()` methods. The `countTime()` method is called every second and handles both the countdown and overtime tracking.
+**`TimerViewModel.swift`** — A self-contained timer that manages only time values with no reference to its parent. Owns `remainingTime` (the displayed countdown/countup value) and `totalSessionTime` (the original session duration, used to detect overtime). Publishes a 1-second timer via `Timer.publish(every: 1, ...)`. Provides `start()` to capture the session duration, `tick()` to advance one second, `reset()` to return to defaults, and `addTime()`/`subtractTime()` for adjustments. It does not know about app state, navigation, or website blocking — ViewModel calls its methods and makes all decisions.
 
 **`CategoryEditView-ViewModel.swift`** — Manages a list of predefined focus categories (Studying, Deep Work, Creative Work, Coding Session, Working), each with an emoji, title, and color. Tracks which category is currently selected and updates the UI accordingly. Passed to `CategoryEditView` as a plain `var` property (no wrapper needed with `@Observable`).
 
@@ -109,23 +109,27 @@ FlowState/
 ```
 User taps Start
     → ViewModel.handleTimer()
-    → TimerViewModel.start()
-    → appState changes to .running
+    → ViewModel.startSession()
+        → appState = .running
+        → TimerViewModel.start() (captures remainingTime as totalSessionTime)
 
 Every 1 second (timer tick via .onReceive in ContentView):
-    → TimerViewModel.countTime()
-        → Decrements ViewModel.initialTime
-        → Calls ViewModel.monitoring()
-            → Guard: only runs if appState == .running
+    → ViewModel.countTime()
+        → Guard: only runs if appState == .running
+        → ViewModel.monitoring()
             → BlockedWebsitesViewModel.checkChromeURL(list:)
                 → NSAppleScript: asks Chrome for active tab URL
                 → Compares URL against blockedWebsites array
                 → If match: redirectToLocalPage()
                     → NSAppleScript: sets Chrome tab URL to BlockPage.html
+        → TimerViewModel.tick()
+            → Decrements remainingTime (or increments during overtime)
 
     → ContentView also copies @Query blockedList to ViewModel.blockedWebsites
       (this is how SwiftData items get passed to the view model layer)
 ```
+
+The ownership flows strictly downward: views call ViewModel, ViewModel calls TimerViewModel. TimerViewModel never references its parent.
 
 ### Data persistence
 

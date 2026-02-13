@@ -47,7 +47,7 @@ struct ContentView: View {
             }
         }
         .onReceive(viewModel.timerViewModel.timer) { _ in
-            viewModel.timerViewModel.countTime()
+            viewModel.countTime()
             viewModel.blockedWebsites = blockedList
         }
     }

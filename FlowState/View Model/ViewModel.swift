@@ -1,5 +1,5 @@
 //
-//  TimerViewModel.swift
+//  ViewModel.swift
 //  FlowState
 //
 //  Created by Dương Đinh Đông Khoa on 25/1/25.
@@ -20,40 +20,74 @@ class ViewModel {
     var appState: TimerState = .idle
     var blockedWebsites: [BlockedItem] = []
     
-    // MARK: – Properties
-    var initialTime: Int = AppConfig.pomodoroTime
+    // MARK: – Computed Properties
     
     var formattedTime: String {
-        let minutes = initialTime / 60
-        let seconds = initialTime % 60
+        let minutes = timerViewModel.remainingTime / 60
+        let seconds = timerViewModel.remainingTime % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
+    var checkOverTime: Bool {
+        timerViewModel.totalSessionTime == 0 && appState != .idle
+    }
+    
+    // MARK: – Init
+    
     init() {
         self.categoryEditViewModel = CategoryEditViewModel()
-        self.blockedWebsitesViewModel = BlockedWebsitesViewModel()  // Assign it to the property
+        self.blockedWebsitesViewModel = BlockedWebsitesViewModel()
         self.timerViewModel = TimerViewModel()
-        self.timerViewModel.viewModel = self  // Connect the reference
     }
-
-    var checkOverTime: Bool {
-        if timerViewModel.currentSessionTime == 0 && appState != .idle {
-            return true
-        } else {
-            return false
-        }
-    }
+    
+    // MARK: – Session Control
     
     func handleTimer() {
         switch appState {
         case .idle:
-            timerViewModel.start()
+            startSession()
         case .paused:
-            timerViewModel.resume()
+            resumeSession()
         case .running:
-            timerViewModel.pause()
+            pauseSession()
         }
     }
+    
+    func startSession() {
+        appState = .running
+        timerViewModel.start()
+    }
+    
+    func pauseSession() {
+        appState = .paused
+    }
+    
+    func resumeSession() {
+        appState = .running
+    }
+    
+    func resetSession() {
+        appState = .idle
+        timerViewModel.reset()
+    }
+    
+    func addTime() {
+        timerViewModel.addTime()
+    }
+    
+    func subtractTime() {
+        timerViewModel.subtractTime()
+    }
+    
+    // MARK: – Timer Tick (called every second from ContentView's .onReceive)
+    
+    func countTime() {
+        guard appState == .running else { return }
+        monitoring()
+        timerViewModel.tick()
+    }
+    
+    // MARK: – Website Monitoring
     
     func monitoring() {
         guard appState == .running else { return }

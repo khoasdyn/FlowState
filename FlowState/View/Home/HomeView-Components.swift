@@ -77,7 +77,7 @@ extension HomeView {
     
     var stopButton : some View {
         Button(action: {
-            viewModel.timerViewModel.reset()
+            viewModel.resetSession()
         }) {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: 20, weight: .semibold))

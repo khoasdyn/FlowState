@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 struct CategoryEditView: View {
     @Environment(\.dismiss) var dismiss
     var viewModel: CategoryEditViewModel

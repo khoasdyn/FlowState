@@ -1,5 +1,5 @@
 //
-//  TimerViewModel_New.swift
+//  TimerViewModel.swift
 //  FlowState
 //
 //  Created by Dương Đinh Đông Khoa on 29/6/25.
@@ -19,53 +19,48 @@ enum TimerState {
 class TimerViewModel {
     
     // MARK: - Properties
-    var viewModel: ViewModel?
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     let timeAmount: Int = 5 // 300 seconds = 5 minutes
-    var currentSessionTime: Int = 0
+    var remainingTime: Int = AppConfig.pomodoroTime
+    var totalSessionTime: Int = 0
     
     // MARK: - Methods
+    
+    /// Called once when a session begins. Captures the current remainingTime as the
+    /// total session duration so the overtime logic knows the boundary.
     func start() {
-        viewModel?.appState = .running
-        currentSessionTime = viewModel?.initialTime ?? 0
+        totalSessionTime = remainingTime
     }
     
-    func countTime() {
-        guard viewModel?.appState == .running else { return }
-        viewModel?.monitoring()
-        
-        if currentSessionTime != 0 {
-            viewModel?.initialTime -= 1
+    /// Called every second while the session is running.
+    /// Counts down during normal time, counts up during overtime.
+    func tick() {
+        if totalSessionTime != 0 {
+            remainingTime -= 1
         } else {
-            viewModel?.initialTime += 1
+            remainingTime += 1
         }
         
-        if viewModel?.initialTime ?? 0 < 0 { // Over time
-            viewModel?.initialTime = currentSessionTime
-            currentSessionTime = 0 // reset
+        // Transition from countdown to overtime
+        if remainingTime < 0 {
+            remainingTime = totalSessionTime
+            totalSessionTime = 0
         }
     }
     
-    func pause() {
-        viewModel?.appState = .paused
-    }
-    
-    func resume() {
-        viewModel?.appState = .running
-    }
-    
+    /// Resets all time values back to the default Pomodoro duration.
     func reset() {
-        viewModel?.appState = .idle
-        viewModel?.initialTime = AppConfig.pomodoroTime
+        remainingTime = AppConfig.pomodoroTime
+        totalSessionTime = 0
     }
     
     func addTime() {
-        viewModel?.initialTime += timeAmount
-        currentSessionTime += timeAmount // update total time
+        remainingTime += timeAmount
+        totalSessionTime += timeAmount
     }
     
     func subtractTime() {
-        viewModel?.initialTime = max(0, (viewModel?.initialTime ?? 0) - timeAmount)
-        currentSessionTime = max(0, currentSessionTime - timeAmount) // update total time
+        remainingTime = max(0, remainingTime - timeAmount)
+        totalSessionTime = max(0, totalSessionTime - timeAmount)
     }
 }

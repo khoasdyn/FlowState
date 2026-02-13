@@ -14,7 +14,7 @@ struct MenuBarItem: View {
             Divider()
             
             Button("Start Session") {
-                viewModel.timerViewModel.start()
+                viewModel.startSession()
             }
             .disabled(viewModel.appState != .idle)
             
@@ -22,9 +22,9 @@ struct MenuBarItem: View {
             
             Button(viewModel.appState == .paused ? "Unpause Session" : "Pause Session") {
                 if viewModel.appState == .paused {
-                    viewModel.timerViewModel.resume()
+                    viewModel.resumeSession()
                 } else {
-                    viewModel.timerViewModel.pause()
+                    viewModel.pauseSession()
                 }
             }
             .disabled(viewModel.appState == .idle)
@@ -32,19 +32,19 @@ struct MenuBarItem: View {
             Divider()
             
             Button("-5") {
-                viewModel.timerViewModel.subtractTime()
+                viewModel.subtractTime()
             }
             .disabled(viewModel.appState == .idle || viewModel.checkOverTime)
             
             Button("+5") {
-                viewModel.timerViewModel.addTime()
+                viewModel.addTime()
             }
             .disabled(viewModel.appState == .idle || viewModel.checkOverTime)
 
             Divider()
             
             Button("Finish Session") {
-                viewModel.timerViewModel.reset()
+                viewModel.resetSession()
             }
             .disabled(viewModel.appState == .idle)
             
