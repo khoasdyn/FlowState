@@ -37,15 +37,39 @@ class BlockedWebsitesViewModel {
             } else {
                 let currentURL = output.stringValue ?? "Failed to get URL"
                 
-                // Check if the current URL matches any of the blocked websites
+                guard let host = extractHost(from: currentURL) else { return }
+                
+                // Check if the current host matches any blocked domain
                 for blockedItem in list {
-                    if currentURL.contains(blockedItem.blockedURL) {
+                    if isHostBlocked(host: host, blockedDomain: blockedItem.blockedURL) {
                         redirectToLocalPage()
                         break
                     }
                 }
             }
         }
+    }
+    
+    /// Extracts the host from a URL string and strips the "www." prefix.
+    /// For example, "https://www.facebook.com/profile" becomes "facebook.com".
+    private func extractHost(from urlString: String) -> String? {
+        guard let url = URL(string: urlString), let host = url.host() else { return nil }
+        
+        var cleanedHost = host.lowercased()
+        if cleanedHost.hasPrefix("www.") {
+            cleanedHost = String(cleanedHost.dropFirst(4))
+        }
+        return cleanedHost
+    }
+    
+    /// Checks if the host exactly matches the blocked domain or is a subdomain of it.
+    /// For example, if blockedDomain is "facebook.com":
+    ///   - "facebook.com" matches (exact)
+    ///   - "m.facebook.com" matches (subdomain)
+    ///   - "notfacebook.com" does NOT match
+    private func isHostBlocked(host: String, blockedDomain: String) -> Bool {
+        let domain = blockedDomain.lowercased()
+        return host == domain || host.hasSuffix("." + domain)
     }
     
     private func redirectToLocalPage() {

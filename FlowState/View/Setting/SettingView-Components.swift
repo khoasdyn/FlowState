@@ -31,24 +31,21 @@ extension SettingView {
                     .opacity(isValidURL ? 0 : 1)
         }
         .onSubmit {
-            guard !inputURL.isEmpty else { // Empty
+            let cleaned = cleanDomainInput(inputURL)
+            
+            guard isValidDomain(cleaned) else {
                 isValidURL = false
                 return
             }
             
-            guard inputURL.count > 3 else { // Too short
-                isValidURL = false
-                return
-            }
-            
-            guard !blockedList.contains(where: { $0.blockedURL == inputURL }) else { // Duplicate
+            guard !blockedList.contains(where: { $0.blockedURL == cleaned }) else { // Duplicate
                 isValidURL = true
                 inputURL = ""
                 return
             }
             
             // Add data
-            modelContext.insert(BlockedItem(blockedURL: inputURL))
+            modelContext.insert(BlockedItem(blockedURL: cleaned))
             inputURL = ""
             isValidURL = true
         }
@@ -121,5 +118,42 @@ extension SettingView {
             }
             .buttonStyle(.plain)
         }
+    }
+    
+    // MARK: - Helpers
+    
+    /// Strips common URL prefixes (http://, https://, www.) and trailing slashes
+    /// so the user can paste a full URL and it gets stored as a clean domain.
+    private func cleanDomainInput(_ input: String) -> String {
+        var result = input
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        // Remove scheme
+        for prefix in ["https://", "http://"] {
+            if result.hasPrefix(prefix) {
+                result = String(result.dropFirst(prefix.count))
+            }
+        }
+        
+        // Remove www.
+        if result.hasPrefix("www.") {
+            result = String(result.dropFirst(4))
+        }
+        
+        // Remove trailing slash and path
+        if let slashIndex = result.firstIndex(of: "/") {
+            result = String(result[result.startIndex..<slashIndex])
+        }
+        
+        return result
+    }
+    
+    /// Checks that the cleaned string looks like a valid domain name.
+    /// Must contain only letters, numbers, dots, and hyphens, and end with
+    /// a dot followed by at least two letters (e.g. .com, .org, .io).
+    private func isValidDomain(_ domain: String) -> Bool {
+        let pattern = #"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
+        return domain.range(of: pattern, options: .regularExpression) != nil
     }
 }

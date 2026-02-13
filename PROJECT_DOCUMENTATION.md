@@ -21,7 +21,7 @@ The blocking mechanism follows this sequence, repeated on a timer while a focus 
 1. The app's timer fires at a regular interval (currently every 1 second, tied to the countdown timer).
 2. The app constructs an AppleScript string that asks the browser for the URL of its active tab.
 3. The app executes this script using `NSAppleScript`, which sends Apple Events to the browser and receives the URL back.
-4. The app compares the returned URL against the user's blocklist using simple substring matching (`currentURL.contains(blockedDomain)`).
+4. The app extracts just the host component from the returned URL using `URL(string:)?.host()`, strips any `www.` prefix, and compares it against the user's blocklist using exact domain matching or subdomain matching (e.g. blocking `facebook.com` also blocks `m.facebook.com`).
 5. If a match is found, the app constructs a second AppleScript string that tells the browser to set the active tab's URL to a local HTML file bundled in the app at `Resource/BlockPage.html`.
 6. The browser navigates the tab to the block page, effectively replacing the distracting website.
 
@@ -49,7 +49,7 @@ This approach requires no special entitlements from Apple, no VPN profiles, no s
 
 **User can revoke permission.** The Automation permission can be disabled at any time in System Settings, which silently breaks the blocking.
 
-**Substring matching can over-match.** Blocking "t.co" would also match URLs containing "t.co" as a substring of longer strings like "select.com" because `contains` checks for substrings anywhere in the URL string, not just the domain.
+**Subdomain matching is automatic.** Blocking `facebook.com` will also block `m.facebook.com` and any other subdomain. If you only want to block a specific subdomain, you would need to add it explicitly, but currently there is no way to exclude subdomains from a parent domain block.
 
 ## Window style
 
@@ -137,7 +137,7 @@ FlowState/
 
 **`ViewModel.swift`** is the central `@Observable` coordinator that owns all child view models (`BlockedWebsitesViewModel`, `TimerViewModel`). Holds the app's navigation state (`AppNavigationView`), the timer state (`TimerState`), and the current blocked websites array. All session control flows through this class: `handleTimer()` for the main toggle, plus `startSession()`, `pauseSession()`, `resumeSession()`, `resetSession()`, `addTime()`, and `subtractTime()` for direct control from the menu bar. The `countTime()` method is called every second from ContentView's `.onReceive` and coordinates both the timer tick and website monitoring. Views never call `TimerViewModel` directly; they always go through `ViewModel`.
 
-**`BlockedWebsitesViewModel.swift`** contains two things: the `BlockedItem` SwiftData model class (a simple URL string with an ID), and the `BlockedWebsitesViewModel` class that executes AppleScript to read Chrome's active tab URL and redirect it if it matches a blocked domain. The `checkChromeURL(list:)` method is the core blocking function. The `redirectToLocalPage()` method constructs and executes the redirect AppleScript.
+**`BlockedWebsitesViewModel.swift`** contains two things: the `BlockedItem` SwiftData model class (a simple URL string with an ID), and the `BlockedWebsitesViewModel` class that executes AppleScript to read Chrome's active tab URL and redirect it if it matches a blocked domain. The `checkChromeURL(list:)` method is the core blocking function. It uses `extractHost(from:)` to parse the browser URL into a clean host string (stripping `www.`), then `isHostBlocked(host:blockedDomain:)` to check for an exact domain match or subdomain match using `hasSuffix("." + domain)`. The `redirectToLocalPage()` method constructs and executes the redirect AppleScript.
 
 **`TimerViewModel.swift`** is a self-contained timer that manages only time values with no reference to its parent. Owns `remainingTime` (the displayed countdown value) and `selectedMinutes` (the user's chosen duration). Publishes a 1-second timer via `Timer.publish(every: 1, ...)`. Provides `tick()` to count down one second (stopping at zero), `reset()` to return to the selected duration, `selectDuration(_:)` to change the preset, and `addTime()`/`subtractTime()` for 5-minute adjustments. It does not know about app state, navigation, or website blocking.
 
@@ -145,7 +145,7 @@ FlowState/
 
 **`HomeView-Components.swift`** defines extracted computed properties for the home screen: `durationPicker` (horizontal row of minute preset pills that disable during a session), `focusImage` (conditionally renders the campfire or marshmallow image with a `.blurReplace` animated transition based on `appState`), `mainGroupButtons` (groups the timer button, stop/reset button, and settings/blocking-status button), `timerButton` (play/pause toggle with countdown display using `.symbolEffect` transitions on the SF Symbol), `stopButton` (reset button with error color styling), and `settingButton` (navigates to the edit screen, shows "Blocking" or "Stopped" with a shield icon that uses `.symbolEffect(.bounce)` with a periodic delay).
 
-**`SettingView-Components.swift`** defines the URL input field with validation (checks for empty, too short, and duplicate entries), the back navigation button, and the blocked websites list. When the list is empty, it shows a single "Add suggested websites" button that inserts facebook.com, x.com, reddit.com, and tiktok.com as defaults.
+**`SettingView-Components.swift`** defines the URL input field with validation, the back navigation button, and the blocked websites list. The input field runs user input through `cleanDomainInput(_:)` which strips `https://`, `http://`, and `www.` prefixes, removes trailing paths, and lowercases the string so that a pasted URL like `https://www.Facebook.com/profile` gets stored cleanly as `facebook.com`. It then validates using `isValidDomain(_:)` which applies a regex pattern to ensure the input contains only valid domain characters (letters, numbers, dots, hyphens) and ends with a dot followed by at least two letters for the top-level domain. Duplicate entries are silently ignored. When the list is empty, it shows a single "Add suggested websites" button that inserts facebook.com, x.com, reddit.com, and tiktok.com as defaults.
 
 **`BlockPage.html`** is the HTML page displayed in the browser when a blocked site is detected. Uses Poppins from Google Fonts. Displays a 3D direction-board illustration, a randomized playful heading, a small divider, and a randomized inspirational quote with author attribution. All colors match the app's gray-warm palette hex values.
 
@@ -163,7 +163,8 @@ Every 1 second (timer tick via .onReceive in ContentView):
         → ViewModel.monitoring()
             → BlockedWebsitesViewModel.checkChromeURL(list:)
                 → NSAppleScript: asks Chrome for active tab URL
-                → Compares URL against blockedWebsites array
+                → Extracts host from URL, strips www. prefix
+                → Checks if host matches or is subdomain of any blocked domain
                 → If match: redirectToLocalPage()
                     → NSAppleScript: sets Chrome tab URL to BlockPage.html
         → TimerViewModel.tick()
