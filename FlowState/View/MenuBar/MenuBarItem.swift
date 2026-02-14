@@ -19,25 +19,17 @@ struct MenuBarItem: View {
             }
             .disabled(viewModel.appState != .idle)
             
+            Divider()
+            
+            Button("-5 min") {
+                viewModel.subtractTime()
+            }
+            .disabled(viewModel.appState == .idle || !viewModel.timerViewModel.canSubtractTime)
 
-//            Divider()
-//            
-//            Button("-5") {
-//                viewModel.subtractTime()
-//            }
-//            .disabled(viewModel.appState == .idle)
-//
-//            Button("+5") {
-//                viewModel.addTime()
-//            }
-//            .disabled(viewModel.appState == .idle)
-
-//            Divider()
-//            
-//            Button("Finish Session") {
-//                viewModel.resetSession()
-//            }
-//            .disabled(viewModel.appState == .idle)
+            Button("+5 min") {
+                viewModel.addTime()
+            }
+            .disabled(viewModel.appState == .idle || !viewModel.timerViewModel.canAddTime)
             
             Divider()
             

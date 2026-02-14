@@ -149,19 +149,19 @@ FlowState/
 
 **`BlockedApp.swift`** — SwiftData `@Model` with `name` (e.g. `"Discord"`) and `path` (e.g. `"/Applications/Discord.app"`).
 
-**`TimerViewModel.swift`** — Self-contained timer with `remainingTime`, `selectedMinutes`, 1-second publisher, `tick()`, `reset()`, `selectDuration(_:)`, and `addTime()`/`subtractTime()`. No reference to parent.
+**`TimerViewModel.swift`** — Self-contained timer with `remainingTime`, `selectedMinutes`, 1-second publisher, `tick()`, `reset()`, `selectDuration(_:)`, and `addTime()`/`subtractTime()`. Stores `sessionStartDate` (set once when a session begins) and computes `sessionEndDate` (current time + remaining seconds). Enforces a 120-minute cap via `maxRemainingTime` (7200 seconds). Exposes `canSubtractTime` (false when remaining time is 5 minutes or under) and `canAddTime` (false when adding 5 minutes would exceed the cap). Both `addTime()` and `subtractTime()` guard against their respective conditions. No reference to parent.
 
 **`AppConfig.swift`** — `durationPresets` ([5, 10, 15, 25, 45, 60]), `defaultDuration` (25), and `ColorTheme` semantic aliases.
 
 **`HomeView.swift`** — Displays the duration picker, focus image, and main button group. No local state; all state comes from the ViewModel via `@Environment`.
 
-**`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker` (disabled during sessions), `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text.
+**`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker`, `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text. The `durationPicker` property branches by session state: when idle it shows preset duration chips (`idleDurationPicker`); when running it shows `activeDurationAdjuster`, an HStack with a "-5 min" button, the session time range (fixed start time arrow projected end time using `.dateTime.hour().minute()` format), and a "+5 min" button. Both adjust buttons disable and dim when their respective limits are reached.
 
 **`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Shows a red warning when a session is active. Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
 
 **`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons that are disabled during active sessions. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
 
-**`MenuBarItem.swift`** — Menu bar dropdown with "Show App", "Start Session" (disabled during sessions), "Settings", and "Quit" buttons.
+**`MenuBarItem.swift`** — Menu bar dropdown with "Show App", "Start Session" (disabled during sessions), "-5 min" and "+5 min" time adjustment buttons (disabled when idle or when their respective limits are reached), "Settings", and "Quit" buttons.
 
 **`MenuBarScene.swift`** — Defines the `MenuBarExtra` scene showing a timer icon and formatted countdown in the menu bar.
 
