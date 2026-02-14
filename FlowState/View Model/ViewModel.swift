@@ -29,6 +29,13 @@ class ViewModel {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
+    /// Returns true when the user is in an active focus session,
+    /// meaning the timer is either counting down or temporarily paused.
+    /// This is used by the AppDelegate to decide whether to block quitting.
+    var isSessionActive: Bool {
+        appState == .running || appState == .paused
+    }
+    
     // MARK: - Init
     
     init() {
