@@ -28,7 +28,7 @@ The timer start button is disabled once a session begins. The user selects a dur
 
 Both blocking mechanisms use **Apple Events** via `NSAppleScript`. Apple Events are macOS's inter-process communication system. Major browsers and System Events expose scripting dictionaries that let external apps query and control them.
 
-Both run on a 1-second polling interval tied to the countdown timer, and both require the user to grant **Automation permission** (System Settings > Privacy & Security > Automation) on first use.
+Both run on a 1-second polling interval driven by the ViewModel's internal `tickTimer` (which runs independently of any view being on screen), and both require the user to grant **Automation permission** (System Settings > Privacy & Security > Automation) on first use.
 
 ### Website blocking
 
@@ -139,9 +139,9 @@ FlowState/
 
 ### Key files
 
-**`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and on every tick maps `@Query` results to plain `[String]` arrays before passing them to the view model. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes.
+**`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, and uses `.onAppear` plus `.onChange(of:)` to sync `@Query` results (blocked websites and apps) into the ViewModel as plain `[String]` arrays whenever the SwiftData data changes. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes. The timer countdown itself is not driven from this view; it runs inside the `ViewModel` via an internal `Timer.scheduledTimer`, so the countdown continues even when the window is closed.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), `showSessionComplete` (triggers the congratulation sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. `resetSession()` sets `showSessionComplete = true` only when the session was actively running. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), `showSessionComplete` (triggers the congratulation sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. Owns a private `tickTimer: Timer?` that drives the 1-second countdown loop independently of any view. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten, then calls `startTickTimer()` to begin the countdown. `countTime()` runs every second (called by the internal timer) and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. `resetSession()` calls `stopTickTimer()` to invalidate the timer, then sets `showSessionComplete = true` only when the session was actively running. The timer uses `[weak self]` in its closure to prevent a retain cycle and dispatches to the main thread via `DispatchQueue.main.async` since it modifies `@Observable` properties observed by SwiftUI views. Views never call child services directly.
 
 **`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
 
@@ -151,7 +151,7 @@ FlowState/
 
 **`BlockedApp.swift`** — SwiftData `@Model` with `name` (e.g. `"Discord"`) and `path` (e.g. `"/Applications/Discord.app"`).
 
-**`TimerViewModel.swift`** — Self-contained timer with `remainingTime`, `selectedMinutes`, 1-second publisher, `tick()`, `reset()`, `selectDuration(_:)`, and `addTime()`/`subtractTime()`. Stores `sessionStartDate` (set once when a session begins) and computes `sessionEndDate` (current time + remaining seconds). Enforces a 120-minute cap via `maxRemainingTime` (7200 seconds). Exposes `canSubtractTime` (false when remaining time is 5 minutes or under) and `canAddTime` (false when adding 5 minutes would exceed the cap). Both `addTime()` and `subtractTime()` guard against their respective conditions. No reference to parent.
+**`TimerViewModel.swift`** — Self-contained timer data model with `remainingTime`, `selectedMinutes`, `tick()`, `reset()`, `selectDuration(_:)`, and `addTime()`/`subtractTime()`. Does not own any timer or publisher; the actual scheduling is handled by the parent `ViewModel` via its internal `tickTimer`. Stores `sessionStartDate` (set once when a session begins) and computes `sessionEndDate` (current time + remaining seconds). Enforces a 120-minute cap via `maxRemainingTime` (7200 seconds). Exposes `canSubtractTime` (false when remaining time is 5 seconds or under) and `canAddTime` (false when adding 5 minutes would exceed the cap). Both `addTime()` and `subtractTime()` guard against their respective conditions. No reference to parent.
 
 **`AppConfig.swift`** — `durationPresets` ([5, 10, 15, 25, 45, 60]), `defaultDuration` (25), and `ColorTheme` semantic aliases.
 
@@ -176,17 +176,23 @@ FlowState/
 ### Data flow
 
 ```
-Every 1 second (.onReceive in ContentView):
-    → Map @Query results to plain [String] arrays on ViewModel
+On window appear / when @Query results change (ContentView):
+    → Sync @Query results to plain [String] arrays on ViewModel
         → blockedDomains = blockedWebsiteList.map { $0.domain }
         → blockedAppNames = blockedAppList.map { $0.name }
+
+Every 1 second (ViewModel's internal tickTimer, runs independently of any view):
     → ViewModel.countTime()
         → Guard: only runs if appState == .running
         → ViewModel.monitoring()
             → websiteBlocker.check(against: [String])  — extract host, match domain, redirect
             → appBlocker.check(against: [String])      — get frontmost app, hide if blocked
         → TimerViewModel.tick()
-        → If remainingTime <= 0: resetSession()
+        → If remainingTime <= 0: resetSession() → stopTickTimer()
+
+Session lifecycle:
+    → startSession() → startTickTimer() → timer fires every 1s → countTime()
+    → resetSession() → stopTickTimer() → timer invalidated
 ```
 
 ### Data persistence

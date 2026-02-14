@@ -17,9 +17,8 @@ enum TimerState {
 class TimerViewModel {
     
     // MARK: - Properties
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     let timeAmount: Int = 300 // 300 seconds = 5 minutes
-    let minRemainingTime: Int = 5 // 1 minute in seconds
+    let minRemainingTime: Int = 5
     let maxRemainingTime: Int = 7200 // 120 minutes in seconds
     var selectedMinutes: Int = AppConfig.defaultDuration
     var remainingTime: Int = AppConfig.defaultDuration * 60

@@ -97,10 +97,15 @@ struct ContentView: View {
                 SettingView()
             }
         }
-        .onReceive(viewModel.timerViewModel.timer) { _ in
+        .onAppear {
             viewModel.blockedDomains = blockedWebsiteList.map { $0.domain }
             viewModel.blockedAppNames = blockedAppList.map { $0.name }
-            viewModel.countTime()
+        }
+        .onChange(of: blockedWebsiteList) {
+            viewModel.blockedDomains = blockedWebsiteList.map { $0.domain }
+        }
+        .onChange(of: blockedAppList) {
+            viewModel.blockedAppNames = blockedAppList.map { $0.name }
         }
         .sheet(isPresented: $viewModel.showSessionComplete) {
             SessionCompleteView()

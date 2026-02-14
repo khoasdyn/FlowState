@@ -22,6 +22,10 @@ class ViewModel {
     var blockedDomains: [String] = []
     var blockedAppNames: [String] = []
     
+    /// The internal timer that fires every second, owned by the ViewModel
+    /// so it keeps running even when the window is closed.
+    private var tickTimer: Timer?
+    
     // MARK: - Computed Properties
     
     var formattedTime: String {
@@ -50,6 +54,7 @@ class ViewModel {
         guard appState == .idle else { return }
         appState = .running
         timerViewModel.sessionStartDate = Date.now
+        startTickTimer()
     }
     
     func resetSession() {
@@ -57,6 +62,7 @@ class ViewModel {
         appState = .idle
         timerViewModel.sessionStartDate = nil
         timerViewModel.reset()
+        stopTickTimer()
         
         if wasRunning {
             showSessionComplete = true
@@ -75,7 +81,7 @@ class ViewModel {
         timerViewModel.subtractTime()
     }
     
-    // MARK: - Timer Tick (called every second from ContentView's .onReceive)
+    // MARK: - Timer Tick (called every second by the internal tickTimer)
     
     func countTime() {
         guard appState == .running else { return }
@@ -93,5 +99,22 @@ class ViewModel {
         guard appState == .running else { return }
         websiteBlocker.check(against: blockedDomains)
         appBlocker.check(against: blockedAppNames)
+    }
+    
+    // MARK: - Internal Timer
+    
+    private func startTickTimer() {
+        stopTickTimer()
+        tickTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.countTime()
+            }
+        }
+    }
+    
+    private func stopTickTimer() {
+        tickTimer?.invalidate()
+        tickTimer = nil
     }
 }
