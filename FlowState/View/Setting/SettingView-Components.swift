@@ -52,19 +52,9 @@ extension SettingView {
     }
     
     var backButton: some View {
-        Button(action: {
+        IconActionButton(icon: "chevron.backward") {
             viewModel.appNavigationView = .home
-        }) {
-            Image(systemName: "chevron.backward")
-                .font(.system(size: 14, weight: .semibold))
-                .fixedSize(horizontal: true, vertical: true)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-                .foregroundStyle(.grayWarm950)
-                .background(.grayWarm200)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .buttonStyle(.plain)
     }
     
     @ViewBuilder
@@ -80,23 +70,12 @@ extension SettingView {
                         
                         Spacer()
                         
-                        Button(action: {
+                        DeleteButton(isDisabled: viewModel.isSessionActive) {
                             modelContext.delete(website)
                             try? modelContext.save()
-                        }) {
-                            Image(systemName: "multiply.circle.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.grayWarm950)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(viewModel.isSessionActive)
-                        .opacity(viewModel.isSessionActive ? 0.3 : 1)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                    .background(.grayWarm200)
-                    .clipShape(RoundedRectangle(cornerRadius: .infinity))
+                    .listItemRow()
                 }
             }
         } else {
@@ -166,23 +145,12 @@ extension SettingView {
                         
                         Spacer()
                         
-                        Button(action: {
+                        DeleteButton(isDisabled: viewModel.isSessionActive) {
                             modelContext.delete(app)
                             try? modelContext.save()
-                        }) {
-                            Image(systemName: "multiply.circle.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.grayWarm950)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(viewModel.isSessionActive)
-                        .opacity(viewModel.isSessionActive ? 0.3 : 1)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                    .background(.grayWarm200)
-                    .clipShape(RoundedRectangle(cornerRadius: .infinity))
+                    .listItemRow()
                 }
             }
         }

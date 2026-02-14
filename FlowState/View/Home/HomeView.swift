@@ -17,10 +17,6 @@ struct HomeView: View {
             focusImage
             mainGroupButtons
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 36)
-        .padding(.bottom, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white)
+        .pageBackground()
     }
 }

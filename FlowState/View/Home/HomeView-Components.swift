@@ -29,8 +29,7 @@ extension HomeView {
                 }) {
                     Text("\(minutes)m")
                         .font(.system(size: 12, weight: .semibold))
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
+                        .pillChip()
                         .foregroundStyle(
                             viewModel.timerViewModel.selectedMinutes == minutes
                             ? .white
@@ -85,8 +84,7 @@ extension HomeView {
         Button(action: action) {
             Text(label)
                 .font(.system(size: 12, weight: .semibold))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .pillChip()
                 .foregroundStyle(enabled ? AppConfig.ColorTheme.primaryText : AppConfig.ColorTheme.secondaryText)
                 .background(Color.grayWarm200)
                 .clipShape(RoundedRectangle(cornerRadius: .infinity))

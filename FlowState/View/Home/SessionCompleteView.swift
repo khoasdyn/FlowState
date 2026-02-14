@@ -13,7 +13,7 @@ struct SessionCompleteView: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            dismissButton
+            IconActionButton(icon: "xmark") { dismiss() }
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             Spacer()
@@ -38,21 +38,5 @@ struct SessionCompleteView: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.white)
-    }
-    
-    private var dismissButton: some View {
-        Button(action: {
-            dismiss()
-        }) {
-            Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .semibold))
-                .fixedSize(horizontal: true, vertical: true)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-                .foregroundStyle(.grayWarm950)
-                .background(.grayWarm200)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-        .buttonStyle(.plain)
     }
 }

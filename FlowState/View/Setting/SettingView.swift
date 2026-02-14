@@ -66,11 +66,7 @@ struct SettingView: View {
                 .padding(.vertical, 2)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 36)
-        .padding(.bottom, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(.white)
+        .pageBackground()
         .fileImporter(
             isPresented: $showingAppPicker,
             allowedContentTypes: [.application],
