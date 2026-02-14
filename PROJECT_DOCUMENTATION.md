@@ -120,9 +120,11 @@ FlowState/
 │   ├── WebsiteBlocker.swift            # AppleScript: read browser URL, match, redirect
 │   └── AppBlocker.swift                # AppleScript: get frontmost app, hide if blocked
 ├── View/
+│   ├── SharedComponents.swift          # Reusable views and modifiers
 │   ├── Home/
 │   │   ├── HomeView.swift
-│   │   └── HomeView-Components.swift
+│   │   ├── HomeView-Components.swift
+│   │   └── SessionCompleteView.swift   # Post-session congratulation sheet
 │   ├── Setting/
 │   │   ├── SettingView.swift           # Two-section layout (websites + apps), file importer
 │   │   ├── SettingView-Components.swift # URL input, app picker button, both blocklists
@@ -139,7 +141,7 @@ FlowState/
 
 **`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and on every tick maps `@Query` results to plain `[String]` arrays before passing them to the view model. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Session control consists of `startSession()` and `resetSession()` only. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), `showSessionComplete` (triggers the congratulation sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. `resetSession()` sets `showSessionComplete = true` only when the session was actively running. Views never call child services directly.
 
 **`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
 
@@ -153,13 +155,17 @@ FlowState/
 
 **`AppConfig.swift`** — `durationPresets` ([5, 10, 15, 25, 45, 60]), `defaultDuration` (25), and `ColorTheme` semantic aliases.
 
-**`HomeView.swift`** — Displays the duration picker, focus image, and main button group. No local state; all state comes from the ViewModel via `@Environment`.
+**`SharedComponents.swift`** — Contains reusable views and modifiers shared across the app. `IconActionButton` is a view that takes an SF Symbol name and action closure, producing a rounded-rect icon button (used by the back button and dismiss button). `DeleteButton` takes an `isDisabled` boolean and action, rendering the multiply.circle.fill icon with session-aware disabling and 30% opacity dimming. `.pageBackground()` is a ViewModifier applying the standard outer padding (horizontal 16, top 36 for hidden title bar clearance, bottom 24), max frame, and white background. `.listItemRow()` is a ViewModifier for the pill-shaped row container used by blocked item lists. `.pillChip()` is a ViewModifier applying vertical 8 / horizontal 12 padding and capsule clip shape, used by duration preset chips and adjust buttons.
 
-**`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker`, `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text. The `durationPicker` property branches by session state: when idle it shows preset duration chips (`idleDurationPicker`); when running it shows `activeDurationAdjuster`, an HStack with a "-5 min" button, the session time range (fixed start time arrow projected end time using `.dateTime.hour().minute()` format), and a "+5 min" button. Both adjust buttons disable and dim when their respective limits are reached.
+**`HomeView.swift`** — Displays the duration picker, focus image, and main button group. Uses `.pageBackground()` for layout. No local state; all state comes from the ViewModel via `@Environment`.
 
-**`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Shows a red warning when a session is active. Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
+**`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker`, `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text. The `durationPicker` property branches by session state: when idle it shows preset duration chips (`idleDurationPicker`) using `.pillChip()`; when running it shows `activeDurationAdjuster`, an HStack with a "-5 min" button, the session time range (fixed start time arrow projected end time using `.dateTime.hour().minute()` format), and a "+5 min" button. Both adjust buttons use `.pillChip()` and disable/dim when their respective limits are reached.
 
-**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons that are disabled during active sessions. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
+**`SessionCompleteView.swift`** — Sheet presented when a focus session ends naturally. Displays the lantern image, a congratulation heading, a subtitle, and an `IconActionButton` (xmark) to dismiss. Triggered by `ViewModel.showSessionComplete` which is set to `true` in `resetSession()` only when the session was actively running.
+
+**`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Uses `.pageBackground()` for layout. Shows a red warning when a session is active. Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
+
+**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). Uses `IconActionButton` for the back button, `DeleteButton` for both blocklists, and `.listItemRow()` for row containers. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
 
 **`MenuBarItem.swift`** — Menu bar dropdown with "Show App", "Start Session" (disabled during sessions), "-5 min" and "+5 min" time adjustment buttons (disabled when idle or when their respective limits are reached), "Settings", and "Quit" buttons.
 
