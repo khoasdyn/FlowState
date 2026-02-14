@@ -167,7 +167,7 @@ FlowState/
 
 **`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). Uses `IconActionButton` for the back button, `DeleteButton` for both blocklists, and `.listItemRow()` for row containers. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
 
-**`MenuBarItem.swift`** — Menu bar dropdown with "Show App", "Start Session" (disabled during sessions), "-5 min" and "+5 min" time adjustment buttons (disabled when idle or when their respective limits are reached), "Settings", and "Quit" buttons.
+**`MenuBarItem.swift`** — Menu bar dropdown with "Start Session" (disabled during sessions), "-5 min" and "+5 min" time adjustment buttons (disabled when idle or when their respective limits are reached), and "Quit" button.
 
 **`MenuBarScene.swift`** — Defines the `MenuBarExtra` scene showing a timer icon and formatted countdown in the menu bar.
 
