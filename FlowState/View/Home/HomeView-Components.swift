@@ -58,7 +58,7 @@ extension HomeView {
             .frame(maxWidth: 300)
             .animation(.smooth(duration: 0.3), value: viewModel.appState)
             
-            Text("Start the timer to block sites on your list.")
+            Text("Start the timer to block sites & apps on your list.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppConfig.ColorTheme.secondaryText)
                 .multilineTextAlignment(.center)
