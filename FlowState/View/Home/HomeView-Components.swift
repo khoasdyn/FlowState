@@ -54,10 +54,10 @@ extension HomeView {
             Text(viewModel.appState == .idle
                  ? "Start the timer to block sites and apps from your block list. You can edit in Settings."
                  : "You cannot pause the timer or quit the app during an active session.")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(AppConfig.ColorTheme.secondaryText)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 300)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(AppConfig.ColorTheme.secondaryText)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 300)
         }
     }
     
@@ -70,8 +70,6 @@ extension HomeView {
                     .font(.system(size: 20, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
                     .symbolEffect(.bounce.up.byLayer, options: .repeat(.periodic(delay: 2.0)))
-                Text("Settings")
-                    .font(.system(size: 14, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 48)
@@ -104,6 +102,5 @@ extension HomeView {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-//        .disabled(viewModel.isSessionActive)
     }
 }
