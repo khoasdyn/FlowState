@@ -22,7 +22,5 @@ struct HomeView: View {
         .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.white)
-
     }
-
 }

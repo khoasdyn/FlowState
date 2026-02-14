@@ -18,6 +18,7 @@ class ViewModel {
     // MARK: - App Management
     var appNavigationView: AppNavigationView = .home
     var appState: TimerState = .idle
+    var showSessionComplete: Bool = false
     var blockedDomains: [String] = []
     var blockedAppNames: [String] = []
     
@@ -52,9 +53,14 @@ class ViewModel {
     }
     
     func resetSession() {
+        let wasRunning = appState == .running
         appState = .idle
         timerViewModel.sessionStartDate = nil
         timerViewModel.reset()
+        
+        if wasRunning {
+            showSessionComplete = true
+        }
     }
     
     func selectDuration(_ minutes: Int) {

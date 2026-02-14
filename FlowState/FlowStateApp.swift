@@ -87,6 +87,8 @@ struct ContentView: View {
     @Query var blockedAppList: [BlockedApp]
     
     var body: some View {
+        @Bindable var viewModel = viewModel
+        
         Group {
             switch viewModel.appNavigationView {
             case .home:
@@ -99,6 +101,10 @@ struct ContentView: View {
             viewModel.blockedDomains = blockedWebsiteList.map { $0.domain }
             viewModel.blockedAppNames = blockedAppList.map { $0.name }
             viewModel.countTime()
+        }
+        .sheet(isPresented: $viewModel.showSessionComplete) {
+            SessionCompleteView()
+                .environment(viewModel)
         }
     }
 }
