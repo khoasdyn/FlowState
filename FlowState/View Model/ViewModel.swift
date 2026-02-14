@@ -46,6 +46,7 @@ class ViewModel {
     // MARK: - Session Control
     
     func startSession() {
+        guard appState == .idle else { return }
         appState = .running
         timerViewModel.sessionStartDate = Date.now
     }
