@@ -11,7 +11,6 @@ import SwiftUI
 enum TimerState {
     case idle
     case running
-    case paused
 }
 
 @Observable

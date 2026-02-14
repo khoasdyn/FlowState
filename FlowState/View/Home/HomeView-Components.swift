@@ -38,7 +38,7 @@ extension HomeView {
     }
     
     var focusImage: some View {
-        Image(viewModel.appState == .running || viewModel.appState == .paused ? .campfire : .marshmallow)
+        Image(viewModel.appState == .running ? .campfire : .marshmallow)
             .resizable()
             .scaledToFit()
             .frame(width: 300, height: 300)
@@ -53,7 +53,7 @@ extension HomeView {
             
             Text(viewModel.appState == .idle
                  ? "Start the timer to block sites and apps from your block list. You can edit in Settings."
-                 : "You cannot pause, quit, or remove blocked items during an active session.")
+                 : "You cannot pause the timer or quit the app during an active session.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppConfig.ColorTheme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -66,11 +66,11 @@ extension HomeView {
             viewModel.appNavigationView = .edit
         }) {
             HStack {
-                Image(systemName: viewModel.appState == .running ? "shield.fill" : "shield.slash.fill")
+                Image(systemName: "gearshape.fill")
                     .font(.system(size: 20, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
                     .symbolEffect(.bounce.up.byLayer, options: .repeat(.periodic(delay: 2.0)))
-                Text(viewModel.appState == .running ? "Blocking" : "Stopped")
+                Text("Settings")
                     .font(.system(size: 14, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
@@ -85,7 +85,7 @@ extension HomeView {
     
     var timerButton: some View {
         Button(action: {
-            viewModel.handleTimer()
+            viewModel.startSession()
         }) {
             HStack(spacing: 0) {
                 Image(systemName: viewModel.appState == .running ? "pause.circle.fill" : "play.circle.fill")
@@ -104,5 +104,6 @@ extension HomeView {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+//        .disabled(viewModel.isSessionActive)
     }
 }

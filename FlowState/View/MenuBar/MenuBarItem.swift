@@ -19,17 +19,7 @@ struct MenuBarItem: View {
             }
             .disabled(viewModel.appState != .idle)
             
-            Divider()
-            
-            Button(viewModel.appState == .paused ? "Unpause Session" : "Pause Session") {
-                if viewModel.appState == .paused {
-                    viewModel.resumeSession()
-                } else {
-                    viewModel.pauseSession()
-                }
-            }
-            .disabled(viewModel.appState == .idle)
-            
+
 //            Divider()
 //            
 //            Button("-5") {

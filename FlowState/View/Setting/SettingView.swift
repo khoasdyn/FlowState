@@ -21,12 +21,20 @@ struct SettingView: View {
     
     var body: some View {
         VStack(spacing: 40) {
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 backButton
                 
-                Text("Edit Blocked List")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.grayWarm950)
+                VStack (alignment: .leading, spacing: 8) {
+                    Text("Settings")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.grayWarm950)
+                    
+                    if viewModel.isSessionActive {
+                        Text("Your session is active. You cannot remove any blocked items.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.error500)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
