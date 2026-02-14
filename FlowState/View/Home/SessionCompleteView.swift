@@ -35,7 +35,7 @@ struct SessionCompleteView: View {
                 viewModel.resetSession()
             }) {
                 HStack(spacing: 8) {
-                    Image(systemName: "cup.and.saucer.fill")
+                    Image(systemName: "cup.and.heat.waves.fill")
                         .font(.system(size: 16, weight: .semibold))
                     Text("Take a Break")
                         .font(.system(size: 14, weight: .semibold))

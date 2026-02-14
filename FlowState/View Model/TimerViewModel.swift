@@ -19,7 +19,7 @@ class TimerViewModel {
     
     // MARK: - Properties
     let timeAmount: Int = 300 // 300 seconds = 5 minutes
-    let minRemainingTime: Int = 5
+    let minRemainingTime: Int = 300
     let maxRemainingTime: Int = 7200 // 120 minutes in seconds
     var selectedMinutes: Int = AppConfig.defaultDuration
     var remainingTime: Int = AppConfig.defaultDuration * 60
