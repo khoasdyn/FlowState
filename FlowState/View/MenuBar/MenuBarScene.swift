@@ -12,8 +12,13 @@ struct MenuBarScene: Scene {
             HStack(spacing: 24) {
                 Image(systemName: "timer")
                 
-                Text(viewModel.formattedTime)
-                    .monospacedDigit()
+                if viewModel.appState == .completed {
+                    Text("\(viewModel.formattedCompletedDuration) (Completed)")
+                        .monospacedDigit()
+                } else {
+                    Text(viewModel.formattedTime)
+                        .monospacedDigit()
+                }
             }
         }
     }

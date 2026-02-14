@@ -2,7 +2,7 @@
 
 ## What this app does
 
-FlowState is a macOS productivity app that combines a focus timer with website and app blocking. During a focus session, the app redirects blocked websites to a local HTML page and continuously hides blocked apps. Once a session starts, the user cannot pause, stop, quit, or remove blocked items until the timer reaches zero. The only escape is to force quit the app via Activity Monitor. The app lives in the menu bar for quick access and has a main window for managing settings.
+FlowState is a macOS productivity app that combines a focus timer with website and app blocking. During a focus session, the app redirects blocked websites to a local HTML page and continuously hides blocked apps. Once a session starts, the user cannot pause, stop, quit, or remove blocked items until the timer reaches zero and the user dismisses the completion screen. The only escape is to force quit the app via Activity Monitor. The app lives in the menu bar for quick access and has a main window for managing settings.
 
 ## Session enforcement
 
@@ -141,7 +141,7 @@ FlowState/
 
 **`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, and uses `.onAppear` plus `.onChange(of:)` to sync `@Query` results (blocked websites and apps) into the ViewModel as plain `[String]` arrays whenever the SwiftData data changes. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes. The timer countdown itself is not driven from this view; it runs inside the `ViewModel` via an internal `Timer.scheduledTimer`, so the countdown continues even when the window is closed.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), `showSessionComplete` (triggers the congratulation sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. Owns a private `tickTimer: Timer?` that drives the 1-second countdown loop independently of any view. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten, then calls `startTickTimer()` to begin the countdown. `countTime()` runs every second (called by the internal timer) and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. `resetSession()` calls `stopTickTimer()` to invalidate the timer, then sets `showSessionComplete = true` only when the session was actively running. The timer uses `[weak self]` in its closure to prevent a retain cycle and dispatches to the main thread via `DispatchQueue.main.async` since it modifies `@Observable` properties observed by SwiftUI views. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState` with `.idle`, `.running`, `.completed`), `showSessionComplete` (triggers the completion sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` (true when `appState != .idle`) used by the AppDelegate and Settings view to enforce restrictions. Owns a private `tickTimer: Timer?` that drives the 1-second loop independently of any view. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten, then calls `startTickTimer()` to begin the countdown. `countTime()` runs every second (called by the internal timer); when `.running` it calls `monitoring()`, ticks the countdown, and calls `completeSession()` when time reaches zero; when `.completed` it only calls `monitoring()` so blocking continues. `completeSession()` captures the total session duration from `sessionStartDate`, sets `appState` to `.completed`, and shows the completion sheet. `resetSession()` is called by the "Take a Break" button and fully resets to `.idle`, stopping the tick timer and clearing all session data. The timer uses `[weak self]` in its closure to prevent a retain cycle and dispatches to the main thread via `DispatchQueue.main.async` since it modifies `@Observable` properties observed by SwiftUI views. Views never call child services directly.
 
 **`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
 
@@ -161,15 +161,15 @@ FlowState/
 
 **`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker`, `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text. The `durationPicker` property branches by session state: when idle it shows preset duration chips (`idleDurationPicker`) using `.pillChip()`; when running it shows `activeDurationAdjuster`, an HStack with a "-5 min" button, the session time range (fixed start time arrow projected end time using `.dateTime.hour().minute()` format), and a "+5 min" button. Both adjust buttons use `.pillChip()` and disable/dim when their respective limits are reached.
 
-**`SessionCompleteView.swift`** — Sheet presented when a focus session ends naturally. Displays the lantern image, a congratulation heading, a subtitle, and an `IconActionButton` (xmark) to dismiss. Triggered by `ViewModel.showSessionComplete` which is set to `true` in `resetSession()` only when the session was actively running.
+**`SessionCompleteView.swift`** — Sheet presented when the timer reaches zero. Displays the lantern image, a congratulation heading, a subtitle, and a "Take a Break" button (gray secondary style with `cup.and.saucer.fill` icon) that calls `viewModel.resetSession()` to transition to idle and dismiss the sheet. Uses `.interactiveDismissDisabled()` to prevent drag-to-dismiss, ensuring the user must explicitly click the button. Blocking remains active while this sheet is shown (the app is in `.completed` state). Triggered by `ViewModel.showSessionComplete` which is set to `true` in `completeSession()`.
 
 **`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Uses `.pageBackground()` for layout. Shows a red warning when a session is active. Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
 
 **`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). Uses `IconActionButton` for the back button, `DeleteButton` for both blocklists, and `.listItemRow()` for row containers. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
 
-**`MenuBarItem.swift`** — Menu bar dropdown with "Start Session" (disabled during sessions), "-5 min" and "+5 min" time adjustment buttons (disabled when idle or when their respective limits are reached), and "Quit" button.
+**`MenuBarItem.swift`** — Menu bar dropdown with "Start Session" (disabled unless idle), "-5 min" and "+5 min" time adjustment buttons (only enabled during `.running` and when their respective limits are not reached), and "Quit" button.
 
-**`MenuBarScene.swift`** — Defines the `MenuBarExtra` scene showing a timer icon and formatted countdown in the menu bar.
+**`MenuBarScene.swift`** — Defines the `MenuBarExtra` scene showing a timer icon and formatted countdown in the menu bar. When `appState` is `.completed`, displays the total session duration followed by "(Completed)" instead of the countdown.
 
 **`AppIconView.swift`** — Displays an app's icon using `NSWorkspace.shared.icon(forFile:)` given the app's path.
 
@@ -192,7 +192,8 @@ Every 1 second (ViewModel's internal tickTimer, runs independently of any view):
 
 Session lifecycle:
     → startSession() → startTickTimer() → timer fires every 1s → countTime()
-    → resetSession() → stopTickTimer() → timer invalidated
+    → Timer reaches zero → completeSession() → appState = .completed, blocking continues
+    → User clicks "Take a Break" → resetSession() → stopTickTimer() → appState = .idle
 ```
 
 ### Data persistence
@@ -211,8 +212,9 @@ Enum-based: `ViewModel.appNavigationView` holds `.home` or `.edit`. `ContentView
 
 - **`.idle`** — No session. User can change duration, edit block lists, and quit freely.
 - **`.running`** — Counting down. Blocking active. Campfire image shown. Quitting blocked. Block list editing disabled. Timer button disabled.
+- **`.completed`** — Timer reached zero. Blocking still active. Session completion sheet is shown with a "Take a Break" button. Quitting blocked. Block list editing disabled. Menu bar shows total session duration with "(Completed)" label. The app remains in this state until the user clicks "Take a Break", which transitions to `.idle`.
 
-Timer auto-resets to `.idle` when it reaches zero.
+Timer transitions from `.running` to `.completed` when it reaches zero, and from `.completed` to `.idle` when the user dismisses the completion sheet.
 
 ### Entitlements
 

@@ -10,12 +10,12 @@ struct MenuBarItem: View {
             Button("-5 min") {
                 viewModel.subtractTime()
             }
-            .disabled(viewModel.appState == .idle || !viewModel.timerViewModel.canSubtractTime)
+            .disabled(viewModel.appState != .running || !viewModel.timerViewModel.canSubtractTime)
 
             Button("+5 min") {
                 viewModel.addTime()
             }
-            .disabled(viewModel.appState == .idle || !viewModel.timerViewModel.canAddTime)
+            .disabled(viewModel.appState != .running || !viewModel.timerViewModel.canAddTime)
         }
         .padding(12)
         .frame(minWidth: 140)

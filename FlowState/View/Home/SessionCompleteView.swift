@@ -9,13 +9,9 @@ import SwiftUI
 
 struct SessionCompleteView: View {
     @Environment(ViewModel.self) var viewModel
-    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         VStack(spacing: 24) {
-            IconActionButton(icon: "xmark") { dismiss() }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
             Spacer()
             
             Image(.lantern)
@@ -34,9 +30,27 @@ struct SessionCompleteView: View {
             }
             
             Spacer()
+            
+            Button(action: {
+                viewModel.resetSession()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Take a Break")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .foregroundStyle(.grayWarm700)
+                .background(.grayWarm200)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.white)
+        .interactiveDismissDisabled()
     }
 }
