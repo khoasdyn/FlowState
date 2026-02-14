@@ -47,10 +47,12 @@ class ViewModel {
     
     func startSession() {
         appState = .running
+        timerViewModel.sessionStartDate = Date.now
     }
     
     func resetSession() {
         appState = .idle
+        timerViewModel.sessionStartDate = nil
         timerViewModel.reset()
     }
     

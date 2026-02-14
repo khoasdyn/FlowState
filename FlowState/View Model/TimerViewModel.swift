@@ -19,8 +19,25 @@ class TimerViewModel {
     // MARK: - Properties
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     let timeAmount: Int = 300 // 300 seconds = 5 minutes
+    let maxRemainingTime: Int = 7200 // 120 minutes in seconds
     var selectedMinutes: Int = AppConfig.defaultDuration
     var remainingTime: Int = AppConfig.defaultDuration * 60
+    var sessionStartDate: Date?
+    
+    // MARK: - Computed Properties
+    
+    /// The clock time when the session ends, based on remaining seconds from now.
+    var sessionEndDate: Date {
+        Date.now.addingTimeInterval(TimeInterval(remainingTime))
+    }
+    
+    var canSubtractTime: Bool {
+        remainingTime > timeAmount
+    }
+    
+    var canAddTime: Bool {
+        remainingTime + timeAmount <= maxRemainingTime
+    }
     
     // MARK: - Methods
     
@@ -44,10 +61,12 @@ class TimerViewModel {
     }
     
     func addTime() {
+        guard canAddTime else { return }
         remainingTime += timeAmount
     }
     
     func subtractTime() {
-        remainingTime = max(0, remainingTime - timeAmount)
+        guard canSubtractTime else { return }
+        remainingTime -= timeAmount
     }
 }

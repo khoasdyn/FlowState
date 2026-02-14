@@ -8,7 +8,20 @@
 import SwiftUI
 
 extension HomeView {
+    
+    // MARK: - Duration picker (idle state)
+    
     var durationPicker: some View {
+        Group {
+            if viewModel.appState == .idle {
+                idleDurationPicker
+            } else {
+                activeDurationAdjuster
+            }
+        }
+    }
+    
+    private var idleDurationPicker: some View {
         HStack(spacing: 6) {
             ForEach(AppConfig.durationPresets, id: \.self) { minutes in
                 Button(action: {
@@ -33,8 +46,54 @@ extension HomeView {
                 .buttonStyle(.plain)
             }
         }
-        .disabled(viewModel.appState != .idle)
-        .opacity(viewModel.appState != .idle ? 0.4 : 1)
+    }
+    
+    // MARK: - Duration adjuster (active session)
+    
+    private var activeDurationAdjuster: some View {
+        HStack(spacing: 12) {
+            adjustButton(
+                label: "-5 min",
+                enabled: viewModel.timerViewModel.canSubtractTime,
+                action: { viewModel.subtractTime() }
+            )
+            
+            sessionTimeRange
+            
+            adjustButton(
+                label: "+5 min",
+                enabled: viewModel.timerViewModel.canAddTime,
+                action: { viewModel.addTime() }
+            )
+        }
+    }
+    
+    private var sessionTimeRange: some View {
+        HStack(spacing: 6) {
+            if let startDate = viewModel.timerViewModel.sessionStartDate {
+                Text(startDate, format: .dateTime.hour().minute())
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(viewModel.timerViewModel.sessionEndDate, format: .dateTime.hour().minute())
+            }
+        }
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(AppConfig.ColorTheme.primaryText)
+    }
+    
+    private func adjustButton(label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .foregroundStyle(enabled ? AppConfig.ColorTheme.primaryText : AppConfig.ColorTheme.secondaryText)
+                .background(Color.grayWarm200)
+                .clipShape(RoundedRectangle(cornerRadius: .infinity))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.4)
     }
     
     var focusImage: some View {

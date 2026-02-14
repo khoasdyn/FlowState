@@ -2,7 +2,27 @@
 
 ## What this app does
 
-FlowState is a macOS productivity app that combines a Pomodoro-style focus timer with website and app blocking. During a focus session, the app redirects blocked websites to a local HTML page and continuously hides blocked apps. It lives in the menu bar for quick access and has a main window for managing settings.
+FlowState is a macOS productivity app that combines a focus timer with website and app blocking. During a focus session, the app redirects blocked websites to a local HTML page and continuously hides blocked apps. Once a session starts, the user cannot pause, stop, quit, or remove blocked items until the timer reaches zero. The only escape is to force quit the app via Activity Monitor. The app lives in the menu bar for quick access and has a main window for managing settings.
+
+## Session enforcement
+
+FlowState is designed around the principle that once a focus session begins, the user is fully committed. There is no pause button, no stop button, and no way to quit the app through normal means.
+
+### Quit protection
+
+The app uses two mechanisms to prevent quitting during a session:
+
+1. **AppDelegate interception.** A custom `AppDelegate` class implements `applicationShouldTerminate(_:)`. When a session is active, it shows a native `NSAlert` informing the user they cannot quit, with "Minimize" (hides the window to the Dock) and "Cancel" (dismisses the alert) buttons. It always returns `.terminateCancel` during an active session, blocking the quit regardless of which button the user clicks.
+
+2. **Force quit as the only exit.** The only way to terminate the app during an active session is through Activity Monitor or the system Force Quit dialog (Cmd+Option+Esc).
+
+### Block list protection
+
+Delete buttons for both websites and apps are disabled and visually dimmed (30% opacity) during an active session. The Settings view also displays a warning message in red (`.error500`) when a session is active: "Your session is active. You cannot remove any blocked items."
+
+### Timer button behavior
+
+The timer start button is disabled once a session begins. The user selects a duration from the preset pills, presses the start button, and the session runs uninterrupted until the countdown reaches zero.
 
 ## How blocking works
 
@@ -39,7 +59,13 @@ Uses `.windowStyle(.hiddenTitleBar)` for a clean look. Traffic light buttons flo
 
 ### Focus image
 
-The campfire image shows when running, marshmallow when idle/paused.
+The campfire image shows when a session is running, marshmallow when idle.
+
+### Hint text
+
+Below the timer and settings buttons, a context-sensitive hint displays:
+- **Idle:** "Start the timer to block sites and apps from your block list. You can edit in Settings."
+- **Running:** "You cannot quit the app or modify your block list during an active session."
 
 ### Block page (BlockPage.html)
 
@@ -75,7 +101,7 @@ Uses the **Observation framework** (`@Observable`) exclusively. Views use `@Stat
 
 ```
 FlowState/
-├── FlowStateApp.swift                  # App entry, WindowGroup + MenuBarExtra, ContentView
+├── FlowStateApp.swift                  # App entry, AppDelegate, WindowGroup + MenuBarExtra, ContentView
 ├── AppConfig.swift                     # Duration presets, color theme aliases
 ├── FlowState.entitlements              # Sandbox entitlements (file access, Apple Events)
 ├── Info.plist
@@ -111,9 +137,9 @@ FlowState/
 
 ### Key files
 
-**`FlowStateApp.swift`** — Two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. Owns the root `ViewModel` with `@State`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and on every tick maps `@Query` results to plain `[String]` arrays before passing them to the view model. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes.
+**`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, subscribes to the timer publisher, and on every tick maps `@Query` results to plain `[String]` arrays before passing them to the view model. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState`), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` computed property used by the AppDelegate and Settings view to enforce restrictions. `countTime()` runs every second and calls `monitoring()` which triggers `websiteBlocker.check(against:)` and `appBlocker.check(against:)`. Session control consists of `startSession()` and `resetSession()` only. Views never call child services directly.
 
 **`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
 
@@ -127,9 +153,17 @@ FlowState/
 
 **`AppConfig.swift`** — `durationPresets` ([5, 10, 15, 25, 45, 60]), `defaultDuration` (25), and `ColorTheme` semantic aliases.
 
-**`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
+**`HomeView.swift`** — Displays the duration picker, focus image, and main button group. No local state; all state comes from the ViewModel via `@Environment`.
 
-**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately, even if the window is closed before SwiftData's autosave triggers.
+**`HomeView-Components.swift`** — Extension on `HomeView` providing `durationPicker` (disabled during sessions), `focusImage` (campfire when running, marshmallow when idle), `timerButton` (disabled during sessions), `settingButton`, and context-sensitive hint text.
+
+**`SettingView.swift`** — Two vertically stacked sections: "Blocked Websites" (text field + list) and "Blocked Apps" (file picker button + list). Shows a red warning when a session is active. Uses `.fileImporter` with `allowedContentTypes: [.application]` for app selection.
+
+**`SettingView-Components.swift`** — URL input with `cleanDomainInput(_:)` (strips scheme, www, path, lowercases) and `isValidDomain(_:)` (regex validation). App picker button, both blocklists with delete buttons that are disabled during active sessions. `handleAppSelection(_:)` extracts app name from bundle URL and inserts into SwiftData. Every insert and delete call is followed by `try? modelContext.save()` to ensure changes persist immediately.
+
+**`MenuBarItem.swift`** — Menu bar dropdown with "Show App", "Start Session" (disabled during sessions), "Settings", and "Quit" buttons.
+
+**`MenuBarScene.swift`** — Defines the `MenuBarExtra` scene showing a timer icon and formatted countdown in the menu bar.
 
 **`AppIconView.swift`** — Displays an app's icon using `NSWorkspace.shared.icon(forFile:)` given the app's path.
 
@@ -163,9 +197,8 @@ Enum-based: `ViewModel.appNavigationView` holds `.home` or `.edit`. `ContentView
 
 ### Timer states
 
-- **`.idle`** — No session. User can change duration and edit settings.
-- **`.running`** — Counting down. Blocking active. Campfire image shown.
-- **`.paused`** — Timer held. Blocking stopped. Marshmallow image shown.
+- **`.idle`** — No session. User can change duration, edit block lists, and quit freely.
+- **`.running`** — Counting down. Blocking active. Campfire image shown. Quitting blocked. Block list editing disabled. Timer button disabled.
 
 Timer auto-resets to `.idle` when it reaches zero.
 
@@ -176,7 +209,7 @@ Timer auto-resets to `.idle` when it reaches zero.
 
 ### Dependencies
 
-Zero external dependencies. Uses SwiftUI, SwiftData, Foundation (`NSAppleScript`), UniformTypeIdentifiers, and AppKit (`NSWorkspace`).
+Zero external dependencies. Uses SwiftUI, SwiftData, Foundation (`NSAppleScript`), UniformTypeIdentifiers, and AppKit (`NSWorkspace`, `NSAlert`, `NSApplication`).
 
 ## AppleScript commands reference
 
@@ -276,3 +309,7 @@ end tell
 **`@Observable`** — Swift macro enabling fine-grained property tracking for SwiftUI. The only observation system used in this project.
 
 **`MenuBarExtra`** — SwiftUI Scene type for menu bar items with dropdown panels.
+
+**`NSApplicationDelegateAdaptor`** — Property wrapper that connects a custom `NSApplicationDelegate` class to a SwiftUI `App`, enabling access to AppKit lifecycle methods like `applicationShouldTerminate(_:)`.
+
+**`NSAlert`** — AppKit class for presenting native macOS alert dialogs with customizable message text, informative text, buttons, and alert styles.
