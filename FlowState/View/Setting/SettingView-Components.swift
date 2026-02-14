@@ -89,6 +89,8 @@ extension SettingView {
                                 .foregroundStyle(.grayWarm950)
                         }
                         .buttonStyle(.plain)
+                        .disabled(viewModel.isSessionActive)
+                        .opacity(viewModel.isSessionActive ? 0.3 : 1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)
@@ -173,6 +175,8 @@ extension SettingView {
                                 .foregroundStyle(.grayWarm950)
                         }
                         .buttonStyle(.plain)
+                        .disabled(viewModel.isSessionActive)
+                        .opacity(viewModel.isSessionActive ? 0.3 : 1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)

@@ -48,37 +48,17 @@ extension HomeView {
         VStack(spacing: 6) {
             timerButton
             
-            HStack(spacing: 6) {
-                if viewModel.appState != .idle {
-                    stopButton
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-                settingButton
-            }
-            .frame(maxWidth: 300)
-            .animation(.smooth(duration: 0.3), value: viewModel.appState)
+            settingButton
+                .frame(maxWidth: 300)
             
-            Text("Start the timer to block sites & apps on your list.")
+            Text(viewModel.appState == .idle
+                 ? "Start the timer to block sites and apps from your block list. You can edit in Settings."
+                 : "You cannot pause, quit, or remove blocked items during an active session.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppConfig.ColorTheme.secondaryText)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 300)
         }
-    }
-    
-    var stopButton: some View {
-        Button(action: {
-            showStopConfirmationModal()
-        }) {
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 20, weight: .semibold))
-                .frame(height: 48)
-                .padding(.horizontal, 24)
-                .foregroundStyle(.error500)
-                .background(.error100)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-        .buttonStyle(.plain)
     }
     
     var settingButton: some View {
