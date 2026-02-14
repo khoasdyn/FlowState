@@ -75,18 +75,6 @@ struct FlowStateApp: App {
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-        .commands {
-            CommandGroup(replacing: .appTermination) {
-                Button("Quit FlowState") {
-                    if viewModel.isSessionActive {
-                        appDelegate.showQuitBlockedAlert()
-                    } else {
-                        NSApplication.shared.terminate(nil)
-                    }
-                }
-                .keyboardShortcut("q")
-            }
-        }
         
         MenuBarScene(showMenuBarExtra: $showMenuBarExtra)
             .environment(viewModel)
