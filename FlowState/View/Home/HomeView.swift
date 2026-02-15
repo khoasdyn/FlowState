@@ -1,12 +1,11 @@
 //
-//  ContentView.swift
+//  HomeView.swift
 //  FlowState
 //
 //  Created by Dương Đinh Đông Khoa on 25/1/25.
 //
 
 import SwiftUI
-import Foundation
 
 struct HomeView: View {
     @Environment(ViewModel.self) var viewModel

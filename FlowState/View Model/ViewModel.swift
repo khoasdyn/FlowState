@@ -11,9 +11,9 @@ import Foundation
 @Observable
 class ViewModel {
     // MARK: - Child Services
-    var websiteBlocker: WebsiteBlocker
-    var appBlocker: AppBlocker
-    var timerViewModel: TimerViewModel
+    private var websiteBlocker: WebsiteBlocker
+    private var appBlocker: AppBlocker
+    private(set) var timerViewModel: TimerViewModel
     
     // MARK: - App Management
     var appNavigationView: AppNavigationView = .home
@@ -112,7 +112,7 @@ class ViewModel {
     
     // MARK: - Timer Tick (called every second by the internal tickTimer)
     
-    func countTime() {
+    private func countTime() {
         guard appState != .idle else { return }
         
         // Run blocking checks only at the monitoring interval, not every tick.
@@ -134,7 +134,7 @@ class ViewModel {
     
     // MARK: - Blocking
     
-    func monitoring() {
+    private func monitoring() {
         guard appState != .idle else { return }
         websiteBlocker.check(against: blockedDomains)
         appBlocker.check(against: blockedAppNames)

@@ -9,7 +9,7 @@ import SwiftData
 import Foundation
 
 @Model
-class BlockedApp: Identifiable, Equatable {
+class BlockedApp {
     var id = UUID()
     var name: String
     var path: String

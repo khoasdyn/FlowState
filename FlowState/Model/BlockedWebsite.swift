@@ -9,7 +9,7 @@ import SwiftData
 import Foundation
 
 @Model
-class BlockedWebsite: Identifiable, Equatable {
+class BlockedWebsite {
     var id = UUID()
     var domain: String
     

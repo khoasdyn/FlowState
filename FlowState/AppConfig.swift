@@ -7,6 +7,21 @@
 
 import SwiftUI
 
+// MARK: - App-level enums
+
+enum AppNavigationView {
+    case home
+    case edit
+}
+
+enum TimerState {
+    case idle
+    case running
+    case completed
+}
+
+// MARK: - App configuration
+
 struct AppConfig {
     static let durationPresets: [Int] = [5, 10, 15, 25, 45, 60]
     static let defaultDuration: Int = 25

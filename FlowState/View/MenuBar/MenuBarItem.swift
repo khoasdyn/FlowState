@@ -1,6 +1,9 @@
-import Foundation
+//
+//  MenuBarItem.swift
+//  FlowState
+//
+
 import SwiftUI
-import AppKit
 
 struct MenuBarItem: View {
     @Environment(ViewModel.self) var viewModel
@@ -24,4 +27,5 @@ struct MenuBarItem: View {
 
 #Preview {
     MenuBarItem()
+        .environment(ViewModel())
 }

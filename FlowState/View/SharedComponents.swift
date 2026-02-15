@@ -97,6 +97,5 @@ struct PillChip: ViewModifier {
 extension View {
     func pillChip() -> some View {
         modifier(PillChip())
-            .clipShape(RoundedRectangle(cornerRadius: .infinity))
     }
 }

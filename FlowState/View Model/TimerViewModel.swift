@@ -6,13 +6,6 @@
 //
 
 import Foundation
-import SwiftUI
-
-enum TimerState {
-    case idle
-    case running
-    case completed
-}
 
 @Observable
 class TimerViewModel {
