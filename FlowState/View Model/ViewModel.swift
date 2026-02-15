@@ -29,6 +29,18 @@ class ViewModel {
     /// Total seconds the focus session lasted, captured at the moment of completion.
     var completedSessionDuration: Int = 0
     
+    /// Counts how many ticks have passed since the last monitoring check.
+    /// Monitoring (AppleScript calls) runs every `monitoringInterval` ticks
+    /// instead of every tick, reducing expensive inter-process communication.
+    private var monitoringTickCounter: Int = 0
+    
+    /// How many seconds between each monitoring check.
+    /// The countdown display still updates every second, but the AppleScript
+    /// calls to check blocked apps and websites only happen at this interval.
+    /// 2 seconds is fast enough that a user cannot meaningfully interact
+    /// with a blocked app or website before it gets caught.
+    private let monitoringInterval: Int = 2
+    
     // MARK: - Computed Properties
     
     var formattedTime: String {
@@ -63,6 +75,7 @@ class ViewModel {
         guard appState == .idle else { return }
         appState = .running
         timerViewModel.sessionStartDate = Date.now
+        monitoringTickCounter = 0
         startTickTimer()
     }
     
@@ -80,6 +93,7 @@ class ViewModel {
         timerViewModel.sessionStartDate = nil
         timerViewModel.reset()
         completedSessionDuration = 0
+        monitoringTickCounter = 0
         stopTickTimer()
         showSessionComplete = false
     }
@@ -100,7 +114,15 @@ class ViewModel {
     
     func countTime() {
         guard appState != .idle else { return }
-        monitoring()
+        
+        // Run blocking checks only at the monitoring interval, not every tick.
+        // This cuts AppleScript overhead in half while still catching blocked
+        // apps and websites within 2 seconds.
+        monitoringTickCounter += 1
+        if monitoringTickCounter >= monitoringInterval {
+            monitoringTickCounter = 0
+            monitoring()
+        }
         
         guard appState == .running else { return }
         timerViewModel.tick()
@@ -120,14 +142,16 @@ class ViewModel {
     
     // MARK: - Internal Timer
     
+    /// Creates the timer manually and adds it to the RunLoop in .common mode.
+    /// .common mode means the timer keeps firing even during UI interactions
+    /// like window dragging or resizing, where the default mode would pause it.
     private func startTickTimer() {
         stopTickTimer()
-        tickTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            DispatchQueue.main.async {
-                self.countTime()
-            }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            self?.countTime()
         }
+        RunLoop.main.add(timer, forMode: .common)
+        tickTimer = timer
     }
     
     private func stopTickTimer() {

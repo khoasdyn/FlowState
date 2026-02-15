@@ -7,8 +7,28 @@
 
 import Foundation
 
-@Observable
 class AppBlocker {
+    
+    /// Pre-compiled script that asks System Events for the frontmost app name.
+    /// Created once in init() and reused on every check, avoiding repeated
+    /// string-to-script compilation on each call.
+    private let compiledGetFrontApp: NSAppleScript?
+    
+    /// Caches one compiled "hide app" script per app name, so each script
+    /// is only compiled the first time that specific app is blocked.
+    private var hideScriptCache: [String: NSAppleScript] = [:]
+    
+    init() {
+        let source = """
+            tell application "System Events"
+                set frontApp to name of first application process whose frontmost is true
+            end tell
+            return frontApp
+            """
+        let script = NSAppleScript(source: source)
+        script?.compileAndReturnError(nil)
+        compiledGetFrontApp = script
+    }
     
     /// Checks if the frontmost app matches any blocked app and hides it.
     func check(against blocklist: [String]) {
@@ -25,41 +45,38 @@ class AppBlocker {
     
     // MARK: - Private
     
-    /// Gets the name of the currently frontmost application via System Events.
+    /// Executes the pre-compiled script to get the frontmost app name.
     private func getFrontmostAppName() -> String? {
-        let appleScript = """
-            tell application "System Events"
-                set frontApp to name of first application process whose frontmost is true
-            end tell
-            return frontApp
-            """
-        
         var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: appleScript) {
-            let output = scriptObject.executeAndReturnError(&error)
-            if let error = error {
-                print("Error getting frontmost app: \(error)")
-                return nil
-            }
-            return output.stringValue
-        }
-        return nil
+        let output = compiledGetFrontApp?.executeAndReturnError(&error)
+        if error != nil { return nil }
+        return output?.stringValue
     }
     
     /// Hides a specific application by setting its visibility to false via System Events.
+    /// Uses a cached compiled script for each app name so the script is only
+    /// compiled once per unique app name, not on every call.
     private func hide(appNamed name: String) {
-        let appleScript = """
-            tell application "System Events"
-                set visible of process "\(name)" to false
-            end tell
-            """
+        let script: NSAppleScript
+        
+        if let cached = hideScriptCache[name] {
+            script = cached
+        } else {
+            let source = """
+                tell application "System Events"
+                    set visible of process "\(name)" to false
+                end tell
+                """
+            guard let newScript = NSAppleScript(source: source) else { return }
+            newScript.compileAndReturnError(nil)
+            hideScriptCache[name] = newScript
+            script = newScript
+        }
         
         var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: appleScript) {
-            let _ = scriptObject.executeAndReturnError(&error)
-            if let error = error {
-                print("Error hiding app \(name): \(error)")
-            }
+        script.executeAndReturnError(&error)
+        if let error {
+            print("Error hiding app \(name): \(error)")
         }
     }
 }
