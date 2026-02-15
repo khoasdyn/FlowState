@@ -28,7 +28,7 @@ The timer start button is disabled once a session begins. The user selects a dur
 
 Both blocking mechanisms use **Apple Events** via `NSAppleScript`. Apple Events are macOS's inter-process communication system. Major browsers and System Events expose scripting dictionaries that let external apps query and control them.
 
-Both run on a 1-second polling interval driven by the ViewModel's internal `tickTimer` (which runs independently of any view being on screen), and both require the user to grant **Automation permission** (System Settings > Privacy & Security > Automation) on first use.
+Both run on a 2-second polling interval (every other tick of the ViewModel's 1-second `tickTimer`, which runs independently of any view being on screen), and both require the user to grant **Automation permission** (System Settings > Privacy & Security > Automation) on first use. The AppleScript objects used by both services are pre-compiled once during initialization and reused on every check, avoiding the overhead of repeated string parsing and compilation.
 
 ### Website blocking
 
@@ -44,7 +44,7 @@ Both run on a 1-second polling interval driven by the ViewModel's internal `tick
 
 ### Known limitations
 
-- **Polling-based.** There is always a brief delay before blocking kicks in.
+- **Polling-based.** There is always a brief delay (up to 2 seconds) before blocking kicks in.
 - **Firefox unsupported.** No scripting dictionary.
 - **Only checks active tab of front window.** Background tabs are not monitored.
 - **User can revoke Automation permission** at any time, silently breaking blocking.
@@ -107,7 +107,7 @@ FlowState/
 ├── Info.plist
 ├── Assets.xcassets/
 │   ├── AppIcon.appiconset/
-│   ├── Untitled_ColorStyles/           # Full color palette (~200 colorsets)
+│   ├── Untitled_ColorStyles/           # Color palette (blue, error, gray-warm families)
 │   ├── campfire.imageset/
 │   └── marshmallow.imageset/
 ├── Resource/
@@ -139,13 +139,13 @@ FlowState/
 
 ### Key files
 
-**`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, and uses `.onAppear` plus `.onChange(of:)` to sync `@Query` results (blocked websites and apps) into the ViewModel as plain `[String]` arrays whenever the SwiftData data changes. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes. The timer countdown itself is not driven from this view; it runs inside the `ViewModel` via an internal `Timer.scheduledTimer`, so the countdown continues even when the window is closed.
+**`FlowStateApp.swift`** — Contains the `AppDelegate` class that intercepts quit attempts via `applicationShouldTerminate(_:)` and shows a blocking `NSAlert` during active sessions. The main `FlowStateApp` struct defines two scenes: `WindowGroup` (hidden title bar, content-sized) and `MenuBarExtra`. It owns the root `ViewModel` with `@State` and passes it to the `AppDelegate` via `.onAppear`. `ContentView` switches between `HomeView` and `SettingView`, and uses `.onAppear` plus `.onChange(of:)` to sync `@Query` results (blocked websites and apps) into the ViewModel as plain `[String]` arrays whenever the SwiftData data changes. This avoids holding SwiftData model objects outside of a valid `ModelContext`, which would cause faulting crashes. The timer countdown itself is not driven from this view; it runs inside the `ViewModel` via an internal `Timer` added to the RunLoop in `.common` mode, so the countdown continues even when the window is closed or during UI interactions.
 
-**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState` with `.idle`, `.running`, `.completed`), `showSessionComplete` (triggers the completion sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` (true when `appState != .idle`) used by the AppDelegate and Settings view to enforce restrictions. Owns a private `tickTimer: Timer?` that drives the 1-second loop independently of any view. `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten, then calls `startTickTimer()` to begin the countdown. `countTime()` runs every second (called by the internal timer); when `.running` it calls `monitoring()`, ticks the countdown, and calls `completeSession()` when time reaches zero; when `.completed` it only calls `monitoring()` so blocking continues. `completeSession()` captures the total session duration from `sessionStartDate`, sets `appState` to `.completed`, and shows the completion sheet. `resetSession()` is called by the "Take a Break" button and fully resets to `.idle`, stopping the tick timer and clearing all session data. The timer uses `[weak self]` in its closure to prevent a retain cycle and dispatches to the main thread via `DispatchQueue.main.async` since it modifies `@Observable` properties observed by SwiftUI views. Views never call child services directly.
+**`ViewModel.swift`** — Central `@Observable` coordinator owning `WebsiteBlocker`, `AppBlocker`, and `TimerViewModel`. Manages navigation (`AppNavigationView`), timer state (`TimerState` with `.idle`, `.running`, `.completed`), `showSessionComplete` (triggers the completion sheet), and two plain-string arrays (`blockedDomains: [String]` and `blockedAppNames: [String]`). Exposes `isSessionActive` (true when `appState != .idle`) used by the AppDelegate and Settings view to enforce restrictions. Owns a private `tickTimer: Timer?` that drives the 1-second loop independently of any view. The timer is created manually and added to the RunLoop in `.common` mode so it keeps firing during UI interactions like window dragging (the `.default` mode used by `Timer.scheduledTimer` would pause during tracking). `startSession()` guards against re-entry when already running to protect `sessionStartDate` from being overwritten, then calls `startTickTimer()` to begin the countdown. `countTime()` runs every second (called by the internal timer); it uses a `monitoringTickCounter` to only call `monitoring()` every 2 ticks (the `monitoringInterval`), reducing expensive AppleScript inter-process communication by half while the countdown display still updates every second. When `.running` it ticks the countdown and calls `completeSession()` when time reaches zero; when `.completed` it only runs monitoring so blocking continues. `completeSession()` captures the total session duration from `sessionStartDate`, sets `appState` to `.completed`, and shows the completion sheet. `resetSession()` is called by the "Take a Break" button and fully resets to `.idle`, stopping the tick timer and clearing all session data. The timer uses `[weak self]` in its closure to prevent a retain cycle. Views never call child services directly.
 
-**`WebsiteBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (domain strings), gets Chrome's active tab URL via AppleScript, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and redirects via `redirectToBlockPage()` if matched.
+**`WebsiteBlocker.swift`** — Plain class (not `@Observable`, since no view observes its properties). Pre-compiles two AppleScript objects in `init()`: `compiledGetURL` (reads Chrome's active tab URL) and `compiledRedirect` (redirects to the block page). The redirect script is fully pre-compiled because the `Bundle.main` path to BlockPage.html does not change at runtime. `check(against:)` accepts `[String]` (domain strings), executes the pre-compiled URL script, extracts the host with `extractHost(from:)`, checks domain/subdomain match with `isHostBlocked(host:blockedDomain:)`, and executes the pre-compiled redirect script if matched.
 
-**`AppBlocker.swift`** — `@Observable` service. `check(against:)` accepts `[String]` (app name strings), gets the frontmost app name via System Events AppleScript (`getFrontmostAppName()`), and hides it via `hide(appNamed:)` if it matches a blocked app.
+**`AppBlocker.swift`** — Plain class (not `@Observable`, since no view observes its properties). Pre-compiles the "get frontmost app" AppleScript in `init()` as `compiledGetFrontApp`. For "hide app" scripts, which contain a dynamic app name, it maintains a `hideScriptCache` dictionary that stores one compiled script per unique app name (compiled on first use, reused thereafter). `check(against:)` accepts `[String]` (app name strings), executes the pre-compiled frontmost-app script, and hides the app via a cached hide script if it matches a blocked app.
 
 **`BlockedWebsite.swift`** — SwiftData `@Model` with a single `domain` property (e.g. `"facebook.com"`).
 
@@ -181,18 +181,19 @@ On window appear / when @Query results change (ContentView):
         → blockedDomains = blockedWebsiteList.map { $0.domain }
         → blockedAppNames = blockedAppList.map { $0.name }
 
-Every 1 second (ViewModel's internal tickTimer, runs independently of any view):
+Every 1 second (ViewModel's internal tickTimer in .common RunLoop mode, runs independently of any view):
     → ViewModel.countTime()
-        → Guard: only runs if appState == .running
-        → ViewModel.monitoring()
-            → websiteBlocker.check(against: [String])  — extract host, match domain, redirect
-            → appBlocker.check(against: [String])      — get frontmost app, hide if blocked
+        → Guard: only runs if appState != .idle
+        → Every 2 ticks (monitoringInterval): ViewModel.monitoring()
+            → websiteBlocker.check(against: [String])  — execute pre-compiled script, match domain, redirect
+            → appBlocker.check(against: [String])      — execute pre-compiled script, hide if blocked
+        → Guard: only ticks if appState == .running
         → TimerViewModel.tick()
-        → If remainingTime <= 0: resetSession() → stopTickTimer()
+        → If remainingTime <= 0: completeSession()
 
 Session lifecycle:
-    → startSession() → startTickTimer() → timer fires every 1s → countTime()
-    → Timer reaches zero → completeSession() → appState = .completed, blocking continues
+    → startSession() → startTickTimer() (RunLoop .common mode) → timer fires every 1s → countTime()
+    → Timer reaches zero → completeSession() → appState = .completed, blocking continues (every 2s)
     → User clicks "Take a Break" → resetSession() → stopTickTimer() → appState = .idle
 ```
 
